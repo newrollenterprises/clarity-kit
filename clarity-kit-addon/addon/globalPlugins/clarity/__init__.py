@@ -5,6 +5,9 @@ import api
 import json
 from .mss import mss, tools
 import requests
+import threading
+import tones
+import time
 
 backend_url = 'http://localhost:5000/processScreen'
 
@@ -267,6 +270,11 @@ def json_to_tree(data):
 
     return create_node(data)
 
+def loading_tone(stop_event):
+  while not stop_event.is_set():
+      tones.beep(640, 100)
+      time.sleep(1)
+
 class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
     # class variables
@@ -290,6 +298,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
                 ui.message('Clarity Kit processing.')
 
+                # loading indicator
+                stop_event = threading.Event()
+                loading_task = threading.Thread(target=loading_tone, args=(stop_event,))
+                loading_task.start()
+
                 # take screenshot
                 with mss() as sct:
                   img = sct.grab(sct.monitors[1])
@@ -297,6 +310,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
                 # Send the bytes to the backend endpoint
                 response = requests.post(backend_url, files={'image': ('image.png', img_bytes, 'image/png')})
+
+                # stop loading indicator
+                stop_event.set()
+                loading_task.join()
 
                 # Print the response from the backend
                 print(f'Status Code: {response.status_code}')

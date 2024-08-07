@@ -11,6 +11,8 @@
   - deploy backend, package addon to give to beta testers (I have now reached first quantum of utility)
   - tune claude prompts to get the clickable elements
   - add a clicking capacity, knowing the structure is only half the problem, need interactivity
+  - compile/obfuscate code
+  - loading indicator
 
 ## Usage
 - install NVDA, enable developer mode (under advanced settings)
