@@ -167,9 +167,10 @@ dummy_data = """
 """
 
 class Node:
-    def __init__(self, name, description):
+    def __init__(self, name, description, textContent):
         self._name = name
         self._description = description
+        self._textContent = textContent
         self._children = []
         self._parent = None
         self._next = None
@@ -192,6 +193,15 @@ class Node:
     @description.setter
     def description(self, value):
         self._description = value
+
+    # Getter and setter for textContent
+    @property
+    def textContent(self):
+        return self._textContent
+    
+    @textContent.setter
+    def textContent(self, value):
+        self._textContent = value
 
     # Getter for children
     @property
@@ -252,7 +262,7 @@ def json_to_tree(data):
         data = json.loads(data)
 
     def create_node(node_data):
-        node = Node(node_data['name'], node_data['description'])
+        node = Node(node_data['name'], node_data['description'], node_data['textContent'])
         for child_data in node_data.get('children', []):
             node.add_child(create_node(child_data))
         return node

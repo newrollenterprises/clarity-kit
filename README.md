@@ -4,6 +4,7 @@
 
 ### 08/09/24
 - I figured out why imports were breaking. NVDA uses python 3.11 32-bit version. You need to use `/path/to/3.11/32-bit/python.exe -m pip install [module]`. It was saying import not found because the .pyd files (c-extended) have a name tag that matches them to a particular arch. So when NVDA's python tried to import only .pyd files for my python 3.9 were being found
+- IDEA: iterate on sub-components of the tree, like a "more info" command to access parts that weren't well-described by Claude
 
 ### 07/29/24
 - gave up on chrome extension, doesn't integrate well with NVDA

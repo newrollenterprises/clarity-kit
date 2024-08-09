@@ -15,7 +15,7 @@ image = cv2.imread(image_path)
 gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
 # Perform OCR on the image
-custom_config = r'--oem 3 --psm 6'  # OEM 3: Default, PSM 6: Assume a single uniform block of text
+custom_config = r'--oem 3 --psm 3'  # OEM 3: Default, PSM 6: Assume a single uniform block of text
 detection = pytesseract.image_to_data(gray, config=custom_config, output_type=pytesseract.Output.DICT)
 
 # Store text and location in an array

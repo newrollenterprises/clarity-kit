@@ -60,7 +60,7 @@ def send_to_claude(image_base64, image_media_type):
                     },
                     {
                         "type": "text",
-                        "text": "Give me a high-level component-based representation of this image. Make sure you inlcude one component for each link/button. Name each component as if it is a react component. Write a short description for each component. The root component is named \"Page\". Return your answer as a JSON tree of nested objects each with 3 properties: name, description, children. Only reply with the JSON, nothing else. No other words."
+                        "text": "Give me a high-level component-based representation of this image. Make sure you inlcude one component for each link/button. Name each component as if it is a react component. Write a short description for each component. Put the textContent of the component into textContent. The root component is named \"Page\". Return your answer as a JSON tree of nested objects each with 4 properties: name, description, textContent, children. Only reply with the JSON, nothing else. No other words."
                     }
                 ]
             }

@@ -78,7 +78,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 img_bytes_obj = io.BytesIO(img_bytes)
                 pillow_img = Image.open(img_bytes_obj)
                 # TODO read man page and change custom_config to better params
-                custom_config = r'--oem 3 --psm 6'  # OEM 3: Default, PSM 6: Assume a single uniform block of text
+                custom_config = r'--oem 3 --psm 3'  # OEM 3: Default, PSM 6: Assume a single uniform block of text
                 detection = pytesseract.image_to_data(pillow_img, config=custom_config, output_type=pytesseract.Output.DICT)
                 # print(detection)
 
@@ -156,6 +156,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
             if main_key_name == 'enter':
                 ui.message('Click')
+                ui.message(GlobalPlugin.current.textContent)
                 return
 
             ui.message(GlobalPlugin.current.name)
