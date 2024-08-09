@@ -10,6 +10,10 @@ ANTHROPIC_API_KEY = app_secrets.api_key
 
 @app.route('/processScreen', methods=['POST'])
 def process_screen():
+
+    # for debugging only, bypasses claude API
+    # return "debugging", 500
+
     if 'image' not in request.files:
         return jsonify({'error': 'No image file provided'}), 400
 

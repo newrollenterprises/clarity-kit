@@ -2,7 +2,10 @@
 
 ## Build Log
 
-### 7/29/24
+### 08/09/24
+- I figured out why imports were breaking. NVDA uses python 3.11 32-bit version. You need to use `/path/to/3.11/32-bit/python.exe -m pip install [module]`. It was saying import not found because the .pyd files (c-extended) have a name tag that matches them to a particular arch. So when NVDA's python tried to import only .pyd files for my python 3.9 were being found
+
+### 07/29/24
 - gave up on chrome extension, doesn't integrate well with NVDA
 - completed MVP (<3 days of work)
   - frontend: NVDA addon, audio-traversable tree representation of screen

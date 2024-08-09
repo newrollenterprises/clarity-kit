@@ -1,274 +1,32 @@
+import sys
+import os
 import globalPluginHandler
 from scriptHandler import script
 import ui
 import api
 import json
-from .mss import mss, tools
 import requests
 import threading
 import tones
 import time
+import io
+
+from .utils import in_order, obj_dump, dummy_data, Node, json_to_tree
+
+# trick to import from local /deps 
+curr_dir = os.path.dirname(__file__)
+parent_dir = os.path.dirname(curr_dir)
+deps_dir = os.path.join(parent_dir, 'deps')
+sys.path.insert(0, deps_dir)
+# end trick
+
+from mss import mss, tools
+import pytesseract
+from PIL import Image
+
+# TODO delete path entry
 
 backend_url = 'http://localhost:5000/processScreen'
-
-def in_order(node):
-    context = [] # empty list we will populate
-
-    def _in_order(node):
-        context.append(node)
-        for child in node.children:
-            _in_order(child)
-
-    _in_order(node)
-
-    return context
-
-def obj_dump(obj):
-    dump_str = ""
-    attributes_methods = dir(obj)
-    entries = []
-    print("Attributes and Methods and their values:")
-    # Iterate over the list of attributes and methods
-    for attr in attributes_methods:
-        # Skip methods and private attributes
-        # if not attr.startswith('_') and not callable(getattr(obj, attr)):
-            # pass
-        try:
-            value = getattr(obj, attr) 
-        except:
-            value = 'ERROR'
-        entries.append((attr, value))
-    dump_str += str(entries)
-    return dump_str
-  
-dummy_data = """
-{
-  "name": "Page",
-  "description": "Main container for the entire Dollar Tree website",
-  "children": [
-    {
-      "name": "Header",
-      "description": "Contains top navigation and main site controls",
-      "children": [
-        {
-          "name": "TopBar",
-          "description": "Upper bar with store and order options",
-          "children": [
-            {
-              "name": "LocationSelector",
-              "description": "Option to set or choose a store location",
-              "children": []
-            },
-            {
-              "name": "CatalogQuickOrder",
-              "description": "Quick access to catalog ordering",
-              "children": []
-            },
-            {
-              "name": "PhoneOrder",
-              "description": "Phone number for placing orders",
-              "children": []
-            },
-            {
-              "name": "SameDayDelivery",
-              "description": "Information about same-day delivery service",
-              "children": []
-            },
-            {
-              "name": "TrackOrders",
-              "description": "Link to track existing orders",
-              "children": []
-            },
-            {
-              "name": "ShopFamilyDollar",
-              "description": "Link to Family Dollar store",
-              "children": []
-            }
-          ]
-        },
-        {
-          "name": "MainHeader",
-          "description": "Primary header with logo, search, and account functions",
-          "children": [
-            {
-              "name": "Logo",
-              "description": "Dollar Tree company logo",
-              "children": []
-            },
-            {
-              "name": "SearchBar",
-              "description": "Search input field for the website",
-              "children": []
-            },
-            {
-              "name": "MoreChoices",
-              "description": "Additional options or menu",
-              "children": []
-            },
-            {
-              "name": "Account",
-              "description": "User account access",
-              "children": []
-            },
-            {
-              "name": "Cart",
-              "description": "Shopping cart icon and access",
-              "children": []
-            }
-          ]
-        },
-        {
-          "name": "NavigationMenu",
-          "description": "Main navigation menu for product categories",
-          "children": [
-            {
-              "name": "AllDepartments",
-              "description": "Dropdown for all store departments",
-              "children": []
-            },
-            {
-              "name": "CategoryLinks",
-              "description": "Direct links to main product categories",
-              "children": []
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "Main",
-      "description": "Main content area of the homepage",
-      "children": [
-        {
-          "name": "AppDownloadBanner",
-          "description": "Promotional banner for new mobile app download",
-          "children": []
-        },
-        {
-          "name": "BackToSchoolPromo",
-          "description": "Featured promotion for back-to-school products",
-          "children": [
-            {
-              "name": "PromoImage",
-              "description": "Image showcasing back-to-school items",
-              "children": []
-            },
-            {
-              "name": "PromoText",
-              "description": "Text promoting 'Return to Learn for Less' campaign",
-              "children": []
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "Footer",
-      "description": "Page footer area",
-      "children": [
-        {
-          "name": "TrustedSite",
-          "description": "TrustedSite security certification seal",
-          "children": []
-        }
-      ]
-    }
-  ]
-}
-"""
-
-class Node:
-    def __init__(self, name, description):
-        self._name = name
-        self._description = description
-        self._children = []
-        self._parent = None
-        self._next = None
-        self._previous = None
-
-    # Getter and setter for name
-    @property
-    def name(self):
-        return self._name
-
-    @name.setter
-    def name(self, value):
-        self._name = value
-
-    # Getter and setter for description
-    @property
-    def description(self):
-        return self._description
-
-    @description.setter
-    def description(self, value):
-        self._description = value
-
-    # Getter for children
-    @property
-    def children(self):
-        return self._children
-
-    # Getter and setter for parent
-    @property
-    def parent(self):
-        return self._parent
-
-    @parent.setter
-    def parent(self, value):
-        self._parent = value
-
-    # Getter and setter for next
-    @property
-    def next(self):
-        return self._next
-
-    @next.setter
-    def next(self, value):
-        self._next = value
-
-    # Getter and setter for previous
-    @property
-    def previous(self):
-        return self._previous
-
-    @previous.setter
-    def previous(self, value):
-        self._previous = value
-
-    # No setter for children; use a method to add children
-    def add_child(self, child):
-        if isinstance(child, Node):
-            if self._children:
-                self._children[-1].next = child
-                child.previous = self._children[-1]
-            child.parent = self
-            self._children.append(child)
-        else:
-            raise ValueError("Child must be an instance of Node")
-
-    def __repr__(self):
-        return f"Node(name={self.name}, description={self.description}, children={len(self.children)})"
-
-    def to_dict(self):
-        return {
-            "name": self.name,
-            "description": self.description,
-            "children": [child.to_dict() for child in self.children]
-        }
-
-
-def json_to_tree(data):
-    if isinstance(data, str):
-        data = json.loads(data)
-
-    def create_node(node_data):
-        node = Node(node_data['name'], node_data['description'])
-        for child_data in node_data.get('children', []):
-            node.add_child(create_node(child_data))
-        return node
-
-    return create_node(data)
 
 def loading_tone(stop_event):
   while not stop_event.is_set():
@@ -282,10 +40,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
     current = None # current element
     z_pressed_once = True # press twice to kick off another screen 
 
-    @script(gestures=["kb:NVDA+z","kb:NVDA+upArrow","kb:NVDA+downArrow","kb:NVDA+leftArrow","kb:NVDA+rightArrow"])
+    @script(gestures=["kb:NVDA+z","kb:NVDA+upArrow","kb:NVDA+downArrow","kb:NVDA+leftArrow","kb:NVDA+rightArrow","kb:NVDA+enter"])
     def script_clarity(self, gesture):
 
-        api.copyToClip(obj_dump(gesture))
+        # api.copyToClip(obj_dump(sys.path))
 
         main_key_name = gesture._get_mainKeyName()
 
@@ -304,6 +62,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 loading_task.start()
 
                 # take screenshot
+                # TODO black and white to improve OCR and claude
                 with mss() as sct:
                   img = sct.grab(sct.monitors[1])
                 img_bytes = tools.to_png(img.rgb, img.size)
@@ -315,12 +74,24 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 stop_event.set()
                 loading_task.join()
 
+                # run text OCR
+                img_bytes_obj = io.BytesIO(img_bytes)
+                pillow_img = Image.open(img_bytes_obj)
+                # TODO read man page and change custom_config to better params
+                custom_config = r'--oem 3 --psm 6'  # OEM 3: Default, PSM 6: Assume a single uniform block of text
+                detection = pytesseract.image_to_data(pillow_img, config=custom_config, output_type=pytesseract.Output.DICT)
+                # print(detection)
+
+                # TODO package tesseract into /deps and specify it
+
                 # Print the response from the backend
                 print(f'Status Code: {response.status_code}')
+                # TODO robust to errors
                 if response.status_code == 200:
                     print('Response:', response.json())
                 else:
                     print('Error:', response.text)
+                    return
                               
                 GlobalPlugin.root = json_to_tree(response.json())
                 GlobalPlugin.current = GlobalPlugin.root
@@ -345,8 +116,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 GlobalPlugin.z_pressed_once = True
                 ui.message('Repeat that command to process a new screen')
 
-            return
-
+            return # end handling of z
 
         if GlobalPlugin.root is None:
             ui.message('You must first process the screen.')
@@ -383,6 +153,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 else:
                     ui.message('Parent')
                     GlobalPlugin.current = GlobalPlugin.current.parent
+
+            if main_key_name == 'enter':
+                ui.message('Click')
+                return
 
             ui.message(GlobalPlugin.current.name)
             if len(GlobalPlugin.current.children) == 0:
