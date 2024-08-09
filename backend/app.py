@@ -45,7 +45,7 @@ def send_to_claude(image_base64, image_media_type):
 
     data = {
         "model": "claude-3-5-sonnet-20240620",
-        "max_tokens": 1024,
+        "max_tokens": 4096,
         "messages": [
             {
                 "role": "user",

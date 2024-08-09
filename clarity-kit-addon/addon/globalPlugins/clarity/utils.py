@@ -1,4 +1,15 @@
 import json
+import sys
+import os
+
+# trick to import from local /deps 
+curr_dir = os.path.dirname(__file__)
+parent_dir = os.path.dirname(curr_dir)
+deps_dir = os.path.join(parent_dir, 'deps')
+sys.path.insert(0, deps_dir)
+# end trick
+
+import pyautogui
 
 def in_order(node):
     context = [] # empty list we will populate
@@ -307,3 +318,12 @@ def similarity_score(s1, s2):
     similarity = (1 - distance / max_len) * 100  # Similarity as a percentage
 
     return similarity
+
+def click_on_element(top, left, height, width):
+    # Calculate the center of the area
+    x = left + width // 2
+    y = top + height // 2
+
+    # Move the mouse to the calculated position and click
+    pyautogui.moveTo(x, y)
+    # pyautogui.click()

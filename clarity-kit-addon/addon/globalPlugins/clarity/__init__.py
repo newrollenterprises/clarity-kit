@@ -11,7 +11,7 @@ import tones
 import time
 import io
 
-from .utils import in_order, obj_dump, dummy_data, Node, json_to_tree, similarity_score
+from .utils import in_order, obj_dump, dummy_data, Node, json_to_tree, similarity_score, click_on_element
 
 # trick to import from local /deps 
 curr_dir = os.path.dirname(__file__)
@@ -25,6 +25,7 @@ import pytesseract
 from PIL import Image
 
 # TODO delete path entry
+pytesseract.pytesseract.tesseract_cmd = os.path.join(deps_dir, 'tesseract', 'tesseract.exe')
 
 backend_url = 'http://localhost:5000/processScreen'
 
@@ -197,6 +198,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 print(GlobalPlugin.detection['text'][best_match_idx])
 
                 # TODO click item
+                top = GlobalPlugin.detection['top'][best_match_idx]
+                left = GlobalPlugin.detection['left'][best_match_idx]
+                height = GlobalPlugin.detection['height'][best_match_idx]
+                width = GlobalPlugin.detection['width'][best_match_idx]
+                click_on_element(top, left, height, width)
                   
                 return
 
@@ -208,49 +214,3 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             else:
                 ui.message(f"{len(GlobalPlugin.current.children)} children.")
             ui.message(GlobalPlugin.current.description)
-            
-
-
-
-
-
-
-    # @script(gesture="kb:NVDA+shift+v")
-    # def script_announceNVDAVersion(self, gesture):
-    #     obj = api.getNavigatorObject()
-
-        
-    #     # accumulate a number of nearby objects
-    #     # context_thresh = 10 # number of objects for context
-    #     # context.append(obj)
-    #     # while len(context) < context_thresh:
-
-    #     # # find root html element (not NVDA obj)
-    #     # root = obj
-    #     # while True:
-    #     #     if not root.parent: # should never happen
-    #     #         ui.message('Failed')
-    #     #     root = root.parent
-    #     #     if root.IA2Attributes:
-    #     #         if 'tag' in root.IA2Attributes:
-    #     #             if root.IA2Attributes['tag'] == 'body': break
-
-    #     root = obj.parent.parent
-
-    #     context = in_order(root) # in-order list of objs
-        
-    #     to_clip = ""
-    #     for x in context:
-    #         # if x.IA2Attributes: to_clip += "OBJECT" + obj_dump(x)
-    #         # if x.IA2Attributes: to_clip += "OBJECT" + str(x.IA2Attributes)
-    #         to_clip += " " + x.basicText
-    #         # to_clip += "VALUE" + x.value
-    #         # to_clip += "CHILDREN" + str(len(x.children))
-    #     ui.message('Clarity: ')
-    #     api.copyToClip(to_clip)
-
-    #     # ui.message(obj.previous.name)
-    #     # ui.message(obj.name)
-    #     # ui.message(obj.next.name)
-    #     if obj.HTMLNode:
-    #         ui.message(obj.HTMLNode.text)
