@@ -6,7 +6,7 @@ import os
 # pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
 # Path to the image file
-image_path = 'dollartree.jpg'
+image_path = 'brainstorm/dollartree.jpg'
 
 # Read the image using OpenCV
 image = cv2.imread(image_path)
@@ -46,7 +46,59 @@ scaling_factor = min(max_width / width, max_height / height)
 new_size = (int(width * scaling_factor), int(height * scaling_factor))
 resized_image = cv2.resize(image, new_size, interpolation=cv2.INTER_AREA)
 
-# Display the resized image with bounding boxes
-cv2.imshow('Image with Text Bounding Boxes', resized_image)
-cv2.waitKey(0)
-cv2.destroyAllWindows()
+# # Display the resized image with bounding boxes
+# cv2.imshow('Image with Text Bounding Boxes', resized_image)
+# cv2.waitKey(0)
+# cv2.destroyAllWindows()
+
+# pairs of words for whole doc
+clusters = []
+for i in range(2, len(detection['level'])):
+    clusters.append(detection['text'][i-2] + ' ' + detection['text'][i-1] + ' ' + detection['text'][i])
+
+print(clusters)
+
+
+# # clustering vars
+# detection['visited'] = [False for x in range(len(detection['level']))]
+# detection['rneighbor'] = [None for x in range(len(detection['level']))]
+# detection['lneighbor'] = [None for x in range(len(detection['level']))]
+# distance_thresh = 50
+# clusters = []
+
+# # find neighbors
+# for i in range(len(detection['level'])):
+#     current_left = detection['left'][i] + detection['width'][i]
+#     current_top = detection['top'][i]
+#     for j in range(len(detection['level'])):
+#         if abs(current_left - detection['left'][j]) < distance_thresh  and abs(current_top - detection['top'][j]) < 10: # found a neighbor
+#             detection['rneighbor'][i] = j
+#             detection['lneighbor'][j] = i
+#             break # only one neighbor
+
+# # cluster neighbors
+# for i in range(len(detection['level'])):
+#     if not detection['visited'][i]:
+#         detection['visited'][i] = True
+#         cluster = []
+#         cluster.append(i)
+#         lneighbor = detection['lneighbor'][i]
+#         while lneighbor:
+#             if detection['visited'][lneighbor]: break
+#             cluster.insert(0, lneighbor)
+#             detection['visited'][lneighbor] = True
+#             lneighbor = detection['lneighbor'][lneighbor]
+#         rneighbor = detection['rneighbor'][i]
+#         while rneighbor:
+#             if detection['visited'][rneighbor]: break
+#             cluster.append(rneighbor)
+#             detection['visited'][rneighbor] = True
+#             rneighbor = detection['rneighbor'][rneighbor]
+#         clusters.append(cluster)
+
+# print(clusters)
+
+# clusters_text = [','.join([detection['text'][x] for x in c]) for c in clusters]
+# print(clusters_text)
+
+print('done')

@@ -268,3 +268,42 @@ def json_to_tree(data):
         return node
 
     return create_node(data)
+
+def levenshtein_distance(s1, s2):
+    # Initialize matrix of size (len(s1)+1) x (len(s2)+1)
+    rows = len(s1) + 1
+    cols = len(s2) + 1
+    distance_matrix = [[0 for x in range(cols)] for y in range(rows)]
+
+    # Fill the first row and column with indices
+    for i in range(1, rows):
+        distance_matrix[i][0] = i
+    for j in range(1, cols):
+        distance_matrix[0][j] = j
+
+    # Fill the matrix with Levenshtein distances
+    for i in range(1, rows):
+        for j in range(1, cols):
+            cost = 0 if s1[i - 1] == s2[j - 1] else 1
+            distance_matrix[i][j] = min(
+                distance_matrix[i - 1][j] + 1,    # Deletion
+                distance_matrix[i][j - 1] + 1,    # Insertion
+                distance_matrix[i - 1][j - 1] + cost  # Substitution
+            )
+
+    # The Levenshtein distance is the value in the bottom-right cell
+    return distance_matrix[-1][-1]
+
+def similarity_score(s1, s2):
+    # Calculate Levenshtein distance
+    distance = levenshtein_distance(s1, s2)
+
+    # Compute the maximum possible distance (which is the length of the longer string)
+    max_len = max(len(s1), len(s2))
+
+    if max_len == 0: return 1
+
+    # Calculate the similarity score
+    similarity = (1 - distance / max_len) * 100  # Similarity as a percentage
+
+    return similarity

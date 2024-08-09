@@ -11,7 +11,7 @@ import tones
 import time
 import io
 
-from .utils import in_order, obj_dump, dummy_data, Node, json_to_tree
+from .utils import in_order, obj_dump, dummy_data, Node, json_to_tree, similarity_score
 
 # trick to import from local /deps 
 curr_dir = os.path.dirname(__file__)
@@ -38,6 +38,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
     # class variables
     root = None # root of screen element tree, set later
     current = None # current element
+    detection = None # stores OCR results
     z_pressed_once = True # press twice to kick off another screen 
 
     @script(gestures=["kb:NVDA+z","kb:NVDA+upArrow","kb:NVDA+downArrow","kb:NVDA+leftArrow","kb:NVDA+rightArrow","kb:NVDA+enter"])
@@ -79,8 +80,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 pillow_img = Image.open(img_bytes_obj)
                 # TODO read man page and change custom_config to better params
                 custom_config = r'--oem 3 --psm 3'  # OEM 3: Default, PSM 6: Assume a single uniform block of text
-                detection = pytesseract.image_to_data(pillow_img, config=custom_config, output_type=pytesseract.Output.DICT)
-                # print(detection)
+                GlobalPlugin.detection = pytesseract.image_to_data(pillow_img, config=custom_config, output_type=pytesseract.Output.DICT)
 
                 # TODO package tesseract into /deps and specify it
 
@@ -156,7 +156,48 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
             if main_key_name == 'enter':
                 ui.message('Click')
-                ui.message(GlobalPlugin.current.textContent)
+                
+                # create clusters from OCR
+                clusters = []
+                for i in range(2, len(GlobalPlugin.detection['level'])):
+                    clusters.append(
+                        {
+                            'text': GlobalPlugin.detection['text'][i-2] + ' ' + GlobalPlugin.detection['text'][i-1] + ' ' + GlobalPlugin.detection['text'][i],
+                            'idxs': [i-2, i-1, i]
+                        }
+                    )
+
+                elem_text = GlobalPlugin.current.textContent.lower()
+
+                best_match_idx_list = None
+                best_score = 0
+
+                for cluster in clusters:
+                  cluster_text = cluster['text'].lower()
+                  curr_score = similarity_score(elem_text, cluster_text) 
+                  if curr_score > best_score:
+                      best_score = curr_score
+                      best_match_idx_list = cluster['idxs'] 
+
+                print('Best cluster match')
+                print(' '.join([GlobalPlugin.detection['text'][x] for x in best_match_idx_list]))
+
+                # now search cluster to find box to click
+                best_match_idx = None
+                best_score = 0
+
+                for idx in best_match_idx_list:
+                    curr_text = GlobalPlugin.detection['text'][idx]
+                    curr_score = similarity_score(elem_text, curr_text)
+                    if curr_score > best_score:
+                        best_score = curr_score
+                        best_match_idx = idx
+
+                print('Best match within cluster')
+                print(GlobalPlugin.detection['text'][best_match_idx])
+
+                # TODO click item
+                  
                 return
 
             ui.message(GlobalPlugin.current.name)
