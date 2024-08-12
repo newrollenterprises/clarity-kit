@@ -27,7 +27,7 @@ def obj_dump(obj):
     dump_str = ""
     attributes_methods = dir(obj)
     entries = []
-    print("Attributes and Methods and their values:")
+    # print("Attributes and Methods and their values:")
     # Iterate over the list of attributes and methods
     for attr in attributes_methods:
         # Skip methods and private attributes
@@ -186,6 +186,7 @@ class Node:
         self._parent = None
         self._next = None
         self._previous = None
+        self._box_idx = None
 
     # Getter and setter for name
     @property
@@ -256,6 +257,15 @@ class Node:
             self._children.append(child)
         else:
             raise ValueError("Child must be an instance of Node")
+    
+    # Getter and setter for box_idx, maps Claude's node to OCR text element from screen
+    @property
+    def box_idx(self):
+        return self._box_idx
+
+    @box_idx.setter
+    def box_idx(self, value):
+        self._box_idx = value
 
     def __repr__(self):
         return f"Node(name={self.name}, description={self.description}, children={len(self.children)})"
@@ -315,7 +325,7 @@ def similarity_score(s1, s2):
     if max_len == 0: return 1
 
     # Calculate the similarity score
-    similarity = (1 - distance / max_len) * 100  # Similarity as a percentage
+    similarity = (1 - distance / max_len)
 
     return similarity
 
@@ -326,4 +336,4 @@ def click_on_element(top, left, height, width):
 
     # Move the mouse to the calculated position and click
     pyautogui.moveTo(x, y)
-    # pyautogui.click()
+    pyautogui.click()

@@ -27,7 +27,7 @@ from PIL import Image
 # TODO delete path entry
 pytesseract.pytesseract.tesseract_cmd = os.path.join(deps_dir, 'tesseract', 'tesseract.exe')
 
-backend_url = 'http://localhost:5000/processScreen'
+backend_url = 'http://clarity.newrollenterprises.com/processScreen'
 
 def loading_tone(stop_event):
   while not stop_event.is_set():
@@ -86,12 +86,12 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 # TODO package tesseract into /deps and specify it
 
                 # Print the response from the backend
-                print(f'Status Code: {response.status_code}')
+                # print(f'Status Code: {response.status_code}')
                 # TODO robust to errors
                 if response.status_code == 200:
-                    print('Response:', response.json())
+                    # print('Response:', response.json())
                 else:
-                    print('Error:', response.text)
+                    # print('Error:', response.text)
                     return
                               
                 GlobalPlugin.root = json_to_tree(response.json())
@@ -103,16 +103,78 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 else:
                     ui.message(f"{len(GlobalPlugin.root.children)} children.")
                 ui.message(GlobalPlugin.root.description)
+                
+                # create clusters from OCR
+                clusters = []
+                for i in range(2, len(GlobalPlugin.detection['level'])):
+                    clusters.append(
+                        {
+                            'text': GlobalPlugin.detection['text'][i-2] + ' ' + GlobalPlugin.detection['text'][i-1] + ' ' + GlobalPlugin.detection['text'][i],
+                            'idxs': [i-2, i-1, i]
+                        }
+                    )
+
+                # mark clickables by matching clusters
+                cluster_confidence_thresh = 0.25 # [0, 1]
+                box_confidence_thresh = 0.25 # [0, 1]
+                def mark_clickable(node):
+
+                    
+                    elem_text = node.textContent.lower()
+
+                    # best_match_idx_list = None
+                    best_match_idx_list = clusters[0]['idxs']
+                    best_cluster_score = 0
+
+                    for cluster in clusters:
+                        cluster_text = cluster['text'].lower()
+                        curr_score = similarity_score(elem_text, cluster_text) 
+                        if curr_score > best_cluster_score:
+                            best_cluster_score = curr_score
+                            best_match_idx_list = cluster['idxs'] 
+
+                    # print('Best cluster match')
+                    # print(' '.join([GlobalPlugin.detection['text'][x] for x in best_match_idx_list]))
+                    # print(f'Score: {best_cluster_score}')
+
+                    # now search cluster to find box to click
+                    best_match_idx = best_match_idx_list[0] 
+                    best_box_score = 0
+
+                    for idx in best_match_idx_list:
+                        curr_text = GlobalPlugin.detection['text'][idx]
+                        curr_score = similarity_score(elem_text, curr_text)
+                        if curr_score > best_box_score:
+                            best_box_score = curr_score
+                            best_match_idx = idx
+
+                    # print('Best match within cluster')
+                    # print(GlobalPlugin.detection['text'][best_match_idx])
+                    # print(f'Score {best_box_score}')
+
+                    if best_cluster_score > cluster_confidence_thresh and best_box_score > box_confidence_thresh:
+                        # attach to node
+                        node.box_idx = best_match_idx 
+
+                    # process children
+                    for child in node.children: mark_clickable(child)
+                
+                mark_clickable(GlobalPlugin.root) # recursive
+
             
             else: # first time z was pressed
 
                 ui.message('Current element')
+
+                if GlobalPlugin.current.box_idx: ui.message('Clickable')
+
                 ui.message(GlobalPlugin.current.name)
                 if len(GlobalPlugin.current.children) == 1:
                     ui.message('1 child.') 
                 else:
                     ui.message(f"{len(GlobalPlugin.current.children)} children.")
                 ui.message(GlobalPlugin.current.description)
+                if GlobalPlugin.current.textContent: ui.message(GlobalPlugin.current.textContent)
                 
                 GlobalPlugin.z_pressed_once = True
                 ui.message('Repeat that command to process a new screen')
@@ -156,55 +218,26 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                     GlobalPlugin.current = GlobalPlugin.current.parent
 
             if main_key_name == 'enter':
-                ui.message('Click')
+                if GlobalPlugin.current.box_idx:
+
+                    ui.message('Click')
+
+                    box_idx = GlobalPlugin.current.box_idx 
+
+                    top = GlobalPlugin.detection['top'][box_idx]
+                    left = GlobalPlugin.detection['left'][box_idx]
+                    height = GlobalPlugin.detection['height'][box_idx]
+                    width = GlobalPlugin.detection['width'][box_idx]
+
+                    click_on_element(top, left, height, width)
                 
-                # create clusters from OCR
-                clusters = []
-                for i in range(2, len(GlobalPlugin.detection['level'])):
-                    clusters.append(
-                        {
-                            'text': GlobalPlugin.detection['text'][i-2] + ' ' + GlobalPlugin.detection['text'][i-1] + ' ' + GlobalPlugin.detection['text'][i],
-                            'idxs': [i-2, i-1, i]
-                        }
-                    )
+                else:
 
-                elem_text = GlobalPlugin.current.textContent.lower()
-
-                best_match_idx_list = None
-                best_score = 0
-
-                for cluster in clusters:
-                  cluster_text = cluster['text'].lower()
-                  curr_score = similarity_score(elem_text, cluster_text) 
-                  if curr_score > best_score:
-                      best_score = curr_score
-                      best_match_idx_list = cluster['idxs'] 
-
-                print('Best cluster match')
-                print(' '.join([GlobalPlugin.detection['text'][x] for x in best_match_idx_list]))
-
-                # now search cluster to find box to click
-                best_match_idx = None
-                best_score = 0
-
-                for idx in best_match_idx_list:
-                    curr_text = GlobalPlugin.detection['text'][idx]
-                    curr_score = similarity_score(elem_text, curr_text)
-                    if curr_score > best_score:
-                        best_score = curr_score
-                        best_match_idx = idx
-
-                print('Best match within cluster')
-                print(GlobalPlugin.detection['text'][best_match_idx])
-
-                # TODO click item
-                top = GlobalPlugin.detection['top'][best_match_idx]
-                left = GlobalPlugin.detection['left'][best_match_idx]
-                height = GlobalPlugin.detection['height'][best_match_idx]
-                width = GlobalPlugin.detection['width'][best_match_idx]
-                click_on_element(top, left, height, width)
+                    ui.message('Not clickable')
                   
                 return
+
+            if GlobalPlugin.current.box_idx: ui.message('Clickable')
 
             ui.message(GlobalPlugin.current.name)
             if len(GlobalPlugin.current.children) == 0:
@@ -214,3 +247,4 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             else:
                 ui.message(f"{len(GlobalPlugin.current.children)} children.")
             ui.message(GlobalPlugin.current.description)
+            if GlobalPlugin.current.textContent: ui.message(GlobalPlugin.current.textContent)
