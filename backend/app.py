@@ -31,9 +31,12 @@ def process_screen():
         addon_json = response_json['content'][0]['text']
 
         # TODO verify that this JSON won't break my frontend
+        print(response_json)
+        print(addon_json)
 
         return jsonify(addon_json)
     else:
+        # TODO obfuscate status code, use generic instead of Claude
         return jsonify({'error': 'Failed to process image'}), response.status_code
 
 def send_to_claude(image_base64, image_media_type):
@@ -60,7 +63,7 @@ def send_to_claude(image_base64, image_media_type):
                     },
                     {
                         "type": "text",
-                        "text": "Give me a high-level component-based representation of this image. Make sure you inlcude one component for each link/button. Name each component as if it is a react component. Write a short description for each component. Put the textContent of the component into textContent. The root component is named \"Page\". Return your answer as a JSON tree of nested objects each with 4 properties: name, description, textContent, children. Only reply with the JSON, nothing else. No other words."
+                        "text": "Breakdown this page into react-style components. First, find the nearest red number in parentheses ABOVE THE COMPONENT so you can mark down its location on the page. Looking to the sides wll give you an INCORRECT LOCATION. This will be the positionMarker. Then give it a name like it is a react component. Then give it a short description. Then extract whatever text it has into textContent. Return all the components using a nested JSON tree structure. Each object has the following 5 attributes: positionMarker (integer), name (str), description (str), textContent (str), children. The root object is named \"Page\". MAKE SURE YOU INCLUDE ONE COMPONENT FOR EVERY INTERACTABLE / CLICKABLE ELEMENT. IT IS OF DIRE IMPORTANCE THAT YOU GET THIS PART RIGHT. Just return the JSON, no other words or text."
                     }
                 ]
             }
@@ -72,5 +75,4 @@ def send_to_claude(image_base64, image_media_type):
     return response
 
 if __name__ == '__main__':
-    # app.run(debug=True)
-    app.run(host='127.0.0.1', port=8001)
+    app.run(debug=False, host='127.0.0.1', port=8001)
