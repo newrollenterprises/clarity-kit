@@ -2,6 +2,11 @@ console.log('Clarity Kit for NVDA loaded successfully.')
 
 const elementsData = [];
 
+function generateRandomString() {
+    const characters = 'ABCDFHIJKLMPRSTUVWXY';
+    return characters.charAt(Math.floor(Math.random() * characters.length));
+}
+
 // Function to create the red box and floating tag
 function highlightElement(element, id) {
     const rect = element.getBoundingClientRect();
@@ -67,7 +72,7 @@ const interactableElements = document.querySelectorAll('a, button, input, select
 
 // Loop through each element and highlight it
 interactableElements.forEach((element, index) => {
-    highlightElement(element, index + 1);
+    highlightElement(element, generateRandomString());
 });
 
 // Update the positions of boxes and tags on window resize and scroll
