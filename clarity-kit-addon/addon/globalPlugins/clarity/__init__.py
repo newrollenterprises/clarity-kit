@@ -23,11 +23,14 @@ sys.path.insert(0, deps_dir)
 from mss import mss, tools
 import pytesseract
 from PIL import Image
+import numpy as np
+import cv2
 
 # TODO delete path entry
 pytesseract.pytesseract.tesseract_cmd = os.path.join(deps_dir, 'tesseract', 'tesseract.exe')
 
-backend_url = 'http://clarity.newrollenterprises.com/processScreen'
+# backend_url = 'http://clarity.newrollenterprises.com/processScreen'
+backend_url = 'http://localhost:8001/processScreen'
 
 def loading_tone(stop_event):
   while not stop_event.is_set():
@@ -39,7 +42,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
     # class variables
     root = None # root of screen element tree, set later
     current = None # current element
-    detection = None # stores OCR results
+    detection = None # for storing OCR results
     z_pressed_once = True # press twice to kick off another screen 
 
     @script(gestures=["kb:NVDA+z","kb:NVDA+upArrow","kb:NVDA+downArrow","kb:NVDA+leftArrow","kb:NVDA+rightArrow","kb:NVDA+enter"])
@@ -64,34 +67,70 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 loading_task.start()
 
                 # take screenshot
-                # TODO black and white to improve OCR and claude
                 with mss() as sct:
-                  img = sct.grab(sct.monitors[1])
-                img_bytes = tools.to_png(img.rgb, img.size)
+                  screenshot = sct.grab(sct.monitors[1])
+                  img = Image.frombytes('RGB', (screenshot.width, screenshot.height), screenshot.rgb)
+                  img_np = np.array(img)
 
+                # Convert image to RGB (if not already)
+                # TODO black and white to improve OCR and claude
+                img_rgb = cv2.cvtColor(img_np, cv2.COLOR_BGR2RGB)
+                
+                # Perform OCR on the image
+                # TODO look for segment only mode, so no work wasted
+                custom_config = r'--oem 3 --psm 6'  # OEM 3: Default, PSM 6: Assume a single uniform block of text
+                # TODO read man page and change custom_config to better params
+                detection = pytesseract.image_to_data(img_rgb, config=custom_config, output_type=pytesseract.Output.DICT)
+                GlobalPlugin.detection = detection # store globally
+                # boxes = pytesseract.image_to_boxes(img_rgb, config=custom_config)
+                
+                # Draw bounding boxes and labels
+                for i in range(len(detection['level'])):
+                    x, y, w, h = detection['left'][i], detection['top'][i], detection['width'][i], detection['height'][i]
+                    # cv2.rectangle(img_rgb, (x, y), (x + w, y + h), (0, 0, 255), 2)
+                    cv2.putText(img_rgb, f"({i})", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+
+                # # Resize the image to fit within a window, maintaining aspect ratio
+                # max_height = 800
+                # max_width = 1200
+
+                # height, width = img_rgb.shape[:2]
+                # scaling_factor = min(max_width / width, max_height / height)
+
+                # new_size = (int(width * scaling_factor), int(height * scaling_factor))
+                # resized_image = cv2.resize(img_rgb, new_size, interpolation=cv2.INTER_AREA)
+
+                # # Display the resized image with bounding boxes
+                # cv2.imshow('Image with Text Bounding Boxes', resized_image)
+                # cv2.waitKey(0)
+                # cv2.destroyAllWindows()               
+                
                 # Send the bytes to the backend endpoint
+                success, img_bytes = cv2.imencode('.png', img_rgb)
                 response = requests.post(backend_url, files={'image': ('image.png', img_bytes, 'image/png')})
 
                 # stop loading indicator
                 stop_event.set()
                 loading_task.join()
 
-                # run text OCR
-                img_bytes_obj = io.BytesIO(img_bytes)
-                pillow_img = Image.open(img_bytes_obj)
-                # TODO read man page and change custom_config to better params
-                custom_config = r'--oem 3 --psm 3'  # OEM 3: Default, PSM 6: Assume a single uniform block of text
-                GlobalPlugin.detection = pytesseract.image_to_data(pillow_img, config=custom_config, output_type=pytesseract.Output.DICT)
-
-                # TODO package tesseract into /deps and specify it
-
                 # Print the response from the backend
                 # print(f'Status Code: {response.status_code}')
                 # TODO robust to errors
                 if response.status_code == 200:
+                    pass
                     # print('Response:', response.json())
+                elif response.status_code == 529:
+                    GlobalPlugin.z_pressed_once = True
+                    print(response.text)
+                    print(response.status_code)
+                    ui.message('Overloaded. Please wait a moment and try again.')
+                    return
                 else:
                     # print('Error:', response.text)
+                    GlobalPlugin.z_pressed_once = True
+                    print(response.text)
+                    print(response.status_code)
+                    ui.message('An error occurred. Please try again')
                     return
                               
                 GlobalPlugin.root = json_to_tree(response.json())
@@ -103,70 +142,12 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 else:
                     ui.message(f"{len(GlobalPlugin.root.children)} children.")
                 ui.message(GlobalPlugin.root.description)
-                
-                # create clusters from OCR
-                clusters = []
-                for i in range(2, len(GlobalPlugin.detection['level'])):
-                    clusters.append(
-                        {
-                            'text': GlobalPlugin.detection['text'][i-2] + ' ' + GlobalPlugin.detection['text'][i-1] + ' ' + GlobalPlugin.detection['text'][i],
-                            'idxs': [i-2, i-1, i]
-                        }
-                    )
-
-                # mark clickables by matching clusters
-                cluster_confidence_thresh = 0.25 # [0, 1]
-                box_confidence_thresh = 0.25 # [0, 1]
-                def mark_clickable(node):
-
-                    
-                    elem_text = node.textContent.lower()
-
-                    # best_match_idx_list = None
-                    best_match_idx_list = clusters[0]['idxs']
-                    best_cluster_score = 0
-
-                    for cluster in clusters:
-                        cluster_text = cluster['text'].lower()
-                        curr_score = similarity_score(elem_text, cluster_text) 
-                        if curr_score > best_cluster_score:
-                            best_cluster_score = curr_score
-                            best_match_idx_list = cluster['idxs'] 
-
-                    # print('Best cluster match')
-                    # print(' '.join([GlobalPlugin.detection['text'][x] for x in best_match_idx_list]))
-                    # print(f'Score: {best_cluster_score}')
-
-                    # now search cluster to find box to click
-                    best_match_idx = best_match_idx_list[0] 
-                    best_box_score = 0
-
-                    for idx in best_match_idx_list:
-                        curr_text = GlobalPlugin.detection['text'][idx]
-                        curr_score = similarity_score(elem_text, curr_text)
-                        if curr_score > best_box_score:
-                            best_box_score = curr_score
-                            best_match_idx = idx
-
-                    # print('Best match within cluster')
-                    # print(GlobalPlugin.detection['text'][best_match_idx])
-                    # print(f'Score {best_box_score}')
-
-                    if best_cluster_score > cluster_confidence_thresh and best_box_score > box_confidence_thresh:
-                        # attach to node
-                        node.box_idx = best_match_idx 
-
-                    # process children
-                    for child in node.children: mark_clickable(child)
-                
-                mark_clickable(GlobalPlugin.root) # recursive
-
             
             else: # first time z was pressed
 
                 ui.message('Current element')
 
-                if GlobalPlugin.current.box_idx: ui.message('Clickable')
+                # if GlobalPlugin.current.box_idx: ui.message('Clickable')
 
                 ui.message(GlobalPlugin.current.name)
                 if len(GlobalPlugin.current.children) == 1:
@@ -218,7 +199,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                     GlobalPlugin.current = GlobalPlugin.current.parent
 
             if main_key_name == 'enter':
-                if GlobalPlugin.current.box_idx:
+                if GlobalPlugin.current.box_idx >= 0:
 
                     ui.message('Click')
 
@@ -237,7 +218,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                   
                 return
 
-            if GlobalPlugin.current.box_idx: ui.message('Clickable')
+            # if GlobalPlugin.current.box_idx: ui.message('Clickable')
 
             ui.message(GlobalPlugin.current.name)
             if len(GlobalPlugin.current.children) == 0:

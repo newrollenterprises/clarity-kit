@@ -2,6 +2,12 @@
 
 ## Build Log
 
+### 08/14/24
+- kept getting 529 (server overload) errors from Claude, so I created backend/app2.py which uses OpenAI under the hood instead. Less effective but more reliable.
+
+### 08/12/24
+- ditched OCR text-matching, instead I use tesseract to find text and label each text blob with an ID number. Claude matches ID (drawn over original screen shot) to components. Click() location is specified using tesseract coordinates and IDs.
+
 ### 08/09/24
 - Clarity Kit now lets you click elements using OCR text-matching. Claude is bad at positions. So I match textContent from Claude with local OCR text recognition to find element to click.
 - I figured out why imports were breaking. NVDA uses python 3.11 32-bit version. You need to use `/path/to/3.11/32-bit/python.exe -m pip install [module]`. It was saying import not found because the .pyd files (c-extended) have a name tag that matches them to a particular arch. So when NVDA's python tried to import only .pyd files for my python 3.9 were being found
