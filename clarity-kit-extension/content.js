@@ -16,7 +16,7 @@ function highlightElement(element, id) {
     box.style.position = 'absolute';
     box.style.border = '2px solid red';
     box.style.pointerEvents = 'none';
-    box.style.zIndex = '9999';
+    box.style.zIndex = '9999998';
 
     // Initial placement of the box
     updateBoxPosition(box, element);
@@ -24,15 +24,16 @@ function highlightElement(element, id) {
 
     // Create a floating tag with the ID number
     const tag = document.createElement('div');
-    tag.innerText = id;
+    tag.innerText = `${id}`;
     tag.style.position = 'fixed';
-    tag.style.backgroundColor = 'rgba(255, 255, 0, 0.7)';  // Yellow background with 70% opacity
-    tag.style.color = 'red';
-    tag.style.padding = '2px 5px';
-    tag.style.borderRadius = '5px';
-    tag.style.fontSize = '12px';
+    tag.style.backgroundColor = 'rgba(255, 255, 0, 1)';  // Yellow background with 70% opacity
+    tag.style.color = 'black';
+    tag.style.padding = '2px 2px';
+    tag.style.borderRadius = '0px';
+    tag.style.border = '1px solid black';
+    tag.style.fontSize = '10px';
     tag.style.pointerEvents = 'none';
-    tag.style.zIndex = '9999';
+    tag.style.zIndex = '9999999';
 
     // Initial placement of the tag
     updateTagPosition(tag, element);
@@ -54,9 +55,9 @@ function updateBoxPosition(box, element) {
 // Function to update the tag's position based on the element's current location
 function updateTagPosition(tag, element) {
     const rect = element.getBoundingClientRect();
-    tag.style.top = `${rect.top + rect.height / 2}px`;
+    tag.style.top = `${rect.top - 10}px`;
     tag.style.left = `${rect.left + rect.width / 2}px`;
-    tag.style.transform = 'translate(-50%, -50%)';
+    tag.style.transform = 'translateX(-50%)';
 }
 
 // Function to update all box and tag positions when the page layout changes
@@ -71,11 +72,13 @@ function updateAllPositions() {
 const interactableElements = document.querySelectorAll('a, button, input, select, textarea, [role="button"], [role="link"], [tabindex], [onclick]');
 
 // Loop through each element and highlight it
+// TODO ensure uniqueness of IDs
 interactableElements.forEach((element, index) => {
-    highlightElement(element, generateRandomString());
+    highlightElement(element, generateRandomString() + ' ' + generateRandomString());
 });
 
 // Update the positions of boxes and tags on window resize and scroll
+// TODO delete old elements and add new ones every interval
 setInterval(updateAllPositions, 3000)
 // window.addEventListener('scroll', updateAllPositions);
 // window.addEventListener('resize', updateAllPositions);

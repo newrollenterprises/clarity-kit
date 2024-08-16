@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 import requests
 import base64
 import app_secrets
+from xml_to_json_tree import react_xml_to_json
 
 app = Flask(__name__)
 
@@ -28,10 +29,14 @@ def process_screen():
         response_json = response.json()
 
         # extract json of interest
-        addon_json = response_json['content'][0]['text']
+        addon_xml= response_json['content'][0]['text']
 
         # TODO verify that this JSON won't break my frontend
         print(response_json)
+        print(addon_xml)
+
+        addon_json = react_xml_to_json(addon_xml)
+        
         print(addon_json)
 
         return jsonify(addon_json)
@@ -63,7 +68,7 @@ def send_to_claude(image_base64, image_media_type):
                     },
                     {
                         "type": "text",
-                        "text": "Breakdown this page into react-style components. First, find the nearest red number in parentheses ABOVE THE COMPONENT so you can mark down its location on the page. Looking to the sides wll give you an INCORRECT LOCATION. This will be the positionMarker. Then give it a name like it is a react component. Then give it a short description. Then extract whatever text it has into textContent. Return all the components using a nested JSON tree structure. Each object has the following 5 attributes: positionMarker (integer), name (str), description (str), textContent (str), children. The root object is named \"Page\". MAKE SURE YOU INCLUDE ONE COMPONENT FOR EVERY INTERACTABLE / CLICKABLE ELEMENT. IT IS OF DIRE IMPORTANCE THAT YOU GET THIS PART RIGHT. Just return the JSON, no other words or text."
+                        "text": "Breakdown this webpage into high-level XML components react-style. Every component should have all 4 attributes! Name each component based off what it does. If the component is outlined in red, give it a \"tagText\" attribute which contains the letters found in the yellow tag near the top of that component. If the component is not outlined in red set \"tagText\" = \"\" (the default value). Give every single component a brief \"description\" attribute of what it is/does. Extract the components text into a \"textContent\" attribute. The root component is <WebPage>. Respond only with the XML. No other words or text."
                     }
                 ]
             }

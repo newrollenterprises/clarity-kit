@@ -76,19 +76,19 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 # TODO black and white to improve OCR and claude
                 img_rgb = cv2.cvtColor(img_np, cv2.COLOR_BGR2RGB)
                 
-                # Perform OCR on the image
-                # TODO look for segment only mode, so no work wasted
-                custom_config = r'--oem 3 --psm 6'  # OEM 3: Default, PSM 6: Assume a single uniform block of text
-                # TODO read man page and change custom_config to better params
-                detection = pytesseract.image_to_data(img_rgb, config=custom_config, output_type=pytesseract.Output.DICT)
-                GlobalPlugin.detection = detection # store globally
-                # boxes = pytesseract.image_to_boxes(img_rgb, config=custom_config)
+                # # Perform OCR on the image
+                # # TODO look for segment only mode, so no work wasted
+                # custom_config = r'--oem 3 --psm 6'  # OEM 3: Default, PSM 6: Assume a single uniform block of text
+                # # TODO read man page and change custom_config to better params
+                # detection = pytesseract.image_to_data(img_rgb, config=custom_config, output_type=pytesseract.Output.DICT)
+                # GlobalPlugin.detection = detection # store globally
+                # # boxes = pytesseract.image_to_boxes(img_rgb, config=custom_config)
                 
-                # Draw bounding boxes and labels
-                for i in range(len(detection['level'])):
-                    x, y, w, h = detection['left'][i], detection['top'][i], detection['width'][i], detection['height'][i]
-                    # cv2.rectangle(img_rgb, (x, y), (x + w, y + h), (0, 0, 255), 2)
-                    cv2.putText(img_rgb, f"({i})", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+                # # Draw bounding boxes and labels
+                # for i in range(len(detection['level'])):
+                #     x, y, w, h = detection['left'][i], detection['top'][i], detection['width'][i], detection['height'][i]
+                #     # cv2.rectangle(img_rgb, (x, y), (x + w, y + h), (0, 0, 255), 2)
+                #     cv2.putText(img_rgb, f"({i})", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
 
                 # # Resize the image to fit within a window, maintaining aspect ratio
                 # max_height = 800
@@ -199,18 +199,19 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                     GlobalPlugin.current = GlobalPlugin.current.parent
 
             if main_key_name == 'enter':
-                if GlobalPlugin.current.box_idx >= 0:
+                if GlobalPlugin.current.box_idx != "":
 
                     ui.message('Click')
 
-                    box_idx = GlobalPlugin.current.box_idx 
+                    # box_idx = GlobalPlugin.current.box_idx 
 
-                    top = GlobalPlugin.detection['top'][box_idx]
-                    left = GlobalPlugin.detection['left'][box_idx]
-                    height = GlobalPlugin.detection['height'][box_idx]
-                    width = GlobalPlugin.detection['width'][box_idx]
+                    # top = GlobalPlugin.detection['top'][box_idx]
+                    # left = GlobalPlugin.detection['left'][box_idx]
+                    # height = GlobalPlugin.detection['height'][box_idx]
+                    # width = GlobalPlugin.detection['width'][box_idx]
 
-                    click_on_element(top, left, height, width)
+                    # click_on_element(top, left, height, width)
+                    ui.message(GlobalPlugin.current.box_idx)
                 
                 else:
 

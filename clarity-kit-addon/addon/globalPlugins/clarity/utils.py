@@ -283,8 +283,8 @@ def json_to_tree(data):
         data = json.loads(data)
 
     def create_node(node_data):
-        id = -1
-        if node_data['positionMarker']: id = node_data['positionMarker']
+        id = ""
+        if node_data['clickID']: id = node_data['clickID']
         node = Node(node_data['name'], node_data['description'], node_data['textContent'], id)
         for child_data in node_data.get('children', []):
             node.add_child(create_node(child_data))
