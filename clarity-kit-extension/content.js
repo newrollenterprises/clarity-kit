@@ -28,7 +28,7 @@ function highlightElement(element, id) {
     tag.style.position = 'fixed';
     tag.style.backgroundColor = 'rgba(255, 255, 0, 1)';  // Yellow background with 70% opacity
     tag.style.color = 'black';
-    tag.style.padding = '2px 2px';
+    tag.style.padding = '2px 4px';
     tag.style.borderRadius = '0px';
     tag.style.border = '1px solid black';
     tag.style.fontSize = '10px';
@@ -65,6 +65,13 @@ function updateAllPositions() {
     elementsData.forEach(({ element, box, tag }) => {
         updateBoxPosition(box, element);
         updateTagPosition(tag, element);
+        if (!element.checkVisibility({visibilityProperty: true})) {
+            box.style.visibility = 'hidden';
+            tag.style.visibility = 'hidden';
+        } else {
+            box.style.visibility = 'visible';
+            tag.style.visibility = 'visible';
+        }
     });
 }
 
