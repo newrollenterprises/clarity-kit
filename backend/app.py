@@ -3,6 +3,8 @@ import base64
 import datetime
 import os
 import threading
+import json
+import time
 
 from flask import Flask, request, jsonify
 
@@ -13,6 +15,8 @@ app = Flask(__name__)
 
 ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages'
 ANTHROPIC_API_KEY = app_secrets.api_key
+
+file_lock = threading.Lock()
 
 @app.route('/logger', methods=['POST'])
 def logger():
@@ -25,9 +29,10 @@ def logger():
     level = data.get('level')
     message = data.get('message')
     timestamp = data.get('timestamp')
+    source = data.get('source')
     
     # Validate required fields
-    if not all([uuid, sid, level, message, timestamp]):
+    if not all([uuid, sid, level, message, timestamp, source]):
         return jsonify({"error": "Missing required fields"}), 400
     
     # Convert epoch timestamp to human-readable format
@@ -44,8 +49,9 @@ def logger():
     log_file_path = os.path.join(log_dir, f'{sid_human_readable}.txt')
     
     # Append the log message to the file
-    with open(log_file_path, 'a') as log_file:
-        log_file.write(f'[{timestamp_human_readable}] [{level}] {message}\n')
+    with file_lock:
+        with open(log_file_path, 'a') as log_file:
+            log_file.write(f'[{timestamp_human_readable}] [{level}] [{source}] {message}\n')
     
     return jsonify({"status": "success"}), 200
 
@@ -70,27 +76,35 @@ def process_screen():
     image_media_type = image_file.content_type
 
     # log screenshot async
-    thread = threading.Thread(
+    screenshot_log_thread = threading.Thread(
         target=log_screenshot,
         args=(image_file, uuid, sid)
     )
-    thread.start()
+    screenshot_log_thread.start()
 
     response = send_to_claude(image_base64, image_media_type)
 
     if response.status_code == 200:
         response_json = response.json()
 
+        # async log response JSON
+        remote_resp_log_thread = threading.Thread(
+            target = log_remote_response,
+            args = (response_json, uuid, sid)
+        )
+        remote_resp_log_thread.start()
+        
+
         # extract json of interest
-        addon_xml= response_json['content'][0]['text']
+        addon_xml = response_json['content'][0]['text']
 
         # TODO verify that this JSON won't break my frontend
-        print(response_json)
-        print(addon_xml)
+        # print(response_json)
+        # print(addon_xml)
 
         addon_json = react_xml_to_json(addon_xml)
         
-        print(addon_json)
+        # print(addon_json)
 
         return jsonify(addon_json)
     else:
@@ -139,6 +153,18 @@ def log_screenshot(screenshot, uuid, sid):
     screenshot.seek(0) # some weird bug fix, otherwise image corrupts
     screenshot.save(f"logs/{uuid}/{sid_human_readable}.png")
     return
+
+def log_remote_response(response, uuid, sid):
+
+    timestamp = time.time()
+    timestamp_human_readable = datetime.datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
+    millis = int((timestamp % 1) * 1000)
+    timestamp_human_readable = f"{timestamp_human_readable}:{millis:03d}"
+    sid_human_readable = datetime.datetime.fromtimestamp(float(sid)).strftime('%Y-%m-%d %H_%M_%S')
+
+    with file_lock:
+        with open(f"logs/{uuid}/{sid_human_readable}.txt", 'a') as f:
+            f.write(f'[{timestamp_human_readable}] [INFO] [flask] Remote returned JSON: {json.dumps(response)}\n')
 
 
 if __name__ == '__main__':

@@ -300,7 +300,7 @@ def get_uuid():
 
 class CustomLogger():
     
-    def __init__(self, backend_url, endpoint = '/logger'):
+    def __init__(self, backend_url, endpoint = 'logger'):
         self._backend_url = backend_url
         self._endpoint = endpoint
 
@@ -322,7 +322,7 @@ class CustomLogger():
         response = requests.post(*args, **kwargs)
         return response
 
-    def debug(self, message):
+    def info(self, message, source='addon'):
         thread = threading.Thread(
           target=CustomLogger.http_post,
           args=(f"{self._backend_url}/{self._endpoint}",),
@@ -331,8 +331,9 @@ class CustomLogger():
               'timestamp': time.time(),
               'uuid': self._uuid,
               'sid': self._sid,
-              'level': 'DEBUG',
+              'level': 'INFO',
               'message': message,
+              'source': source
             }
           }
         )
