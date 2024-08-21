@@ -1,20 +1,20 @@
+# build-in modules
 import sys
 import os
-import globalPluginHandler
-from scriptHandler import script
-import ui
-import api
-import json
 import requests
 import threading
 import tones
 import time
-import io
 import asyncio
-import logging
-import tempfile
 
-from .utils import in_order, obj_dump, dummy_data, Node, json_to_tree, click_on_element
+# NVDA imports
+import globalPluginHandler
+from scriptHandler import script
+import ui
+import api
+
+# local imports
+from .utils import customer_logger, json_to_tree
 
 # trick to import from local /deps 
 curr_dir = os.path.dirname(__file__)
@@ -23,33 +23,26 @@ deps_dir = os.path.join(parent_dir, 'deps')
 sys.path.insert(0, deps_dir)
 # end trick
 
+# /deps imports
 from mss import mss, tools
 import websockets
 
 # TODO delete path entry
 
-# Configure logging
-log_str = "" # will hold log data to send to backend
-class logger():
+# constants
+# BACKEND_URL = 'http://clarity.newrollenterprises.com'
+BACKEND_URL = 'http://localhost:8001'
+WEBSOCKET_PORT = 8765
 
-    format='%(asctime)s - %(levelname)s - %(message)s',  # Log format
-    level=logging.DEBUG  # Log level: DEBUG, INFO, WARNING, ERROR, CRITICAL
+custom_logger.debug("Loading Clarity Kit")
 
-    def debug(self, message):
-
-        response = requests.post(f"{backend_url}/logger", json={'level': 'DEBUG', 'message':message})
-
-
-logger.debug("Loading Clarity Kit")
-
-# backend_url = 'http://clarity.newrollenterprises.com/processScreen'
-backend_url = 'http://localhost:8001/processScreen'
-
+# used for beeps while loading
 def loading_tone(stop_event):
   while not stop_event.is_set():
       tones.beep(640, 100)
       time.sleep(1)
 
+# adheres to NVDA specs 
 class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
     # class variables
@@ -62,8 +55,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
     @script(gestures=["kb:NVDA+z","kb:NVDA+upArrow","kb:NVDA+downArrow","kb:NVDA+leftArrow","kb:NVDA+rightArrow","kb:NVDA+enter"])
     def script_clarity(self, gesture):
 
-        logger.debug(f"Script called with gesture {gesture._get_mainKeyName()}")
+        custom_logger.debug(f"Script called with gesture {gesture._get_mainKeyName()}")
 
+        # if not already done, create websocket to talk to chrome extension
         if not GlobalPlugin.server_started:
 
             GlobalPlugin.server_started = True
@@ -71,7 +65,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             async def handler(websocket, path):
                 async for message in websocket:
                     if GlobalPlugin.click_id_buffer is not None:
-                        logger.debug(f"WebSocket message received: {message}")
+                        custom_logger.debug(f"WebSocket message received: {message}")
                         # await websocket.send(f"Echo: {message}")
                         await websocket.send(GlobalPlugin.click_id_buffer)
                         GlobalPlugin.click_id_buffer = None # free up buffer
@@ -82,12 +76,12 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 asyncio.set_event_loop(loop)
                 
                 # Start the WebSocket server
-                start_server = websockets.serve(handler, "localhost", 8765)
+                start_server = websockets.serve(handler, "localhost", WEBSOCKET_PORT)
                 loop.run_until_complete(start_server)
                 loop.run_forever()
 
             # Start the WebSocket server in a new thread
-            logger.debug("Starting WebSocket server")
+            custom_logger.debug("Starting WebSocket server")
             server_thread = threading.Thread(target=start_server)
             server_thread.start()
 
@@ -103,34 +97,34 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 GlobalPlugin.z_pressed_once = False
 
                 ui.message('Clarity Kit processing.')
-                logger.debug("Processing a new screen")
+                custom_logger.debug("Processing a new screen")
 
                 # loading indicator
-                logger.debug("Starting loading indicator")
+                custom_logger.debug("Starting loading indicator")
                 stop_event = threading.Event()
                 loading_task = threading.Thread(target=loading_tone, args=(stop_event,))
                 loading_task.start()
 
                 # take screenshot
-                logger.debug("Taking screenshot")
+                custom_logger.debug("Taking screenshot")
                 with mss() as sct:
                   img = sct.grab(sct.monitors[1])
                 img_bytes = tools.to_png(img.rgb, img.size)
 
                 # Send the bytes to the backend endpoint
-                logger.debug("Sending screenshot to backend")
-                response = requests.post(backend_url, files={'image': ('image.png', img_bytes, 'image/png')})
+                custom_logger.debug("Sending screenshot to backend")
+                response = requests.post(BACKEND_URL, files={'image': ('image.png', img_bytes, 'image/png')})
 
                 # stop loading indicator
-                logger.debug("Stopping loading indicator")
+                custom_logger.debug("Stopping loading indicator")
                 stop_event.set()
                 loading_task.join()
 
                 # Print the response from the backend
                 # print(f'Status Code: {response.status_code}')
                 # TODO robust to errors
-                logger.debug(f"Response code {response.status_code}")
-                logger.debug(f"Response JSON: {response.json()}")
+                custom_logger.debug(f"Response code {response.status_code}")
+                custom_logger.debug(f"Response JSON: {response.json()}")
 
                 if response.status_code == 200:
                     pass
@@ -149,11 +143,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                     ui.message('An error occurred. Please try again')
                     return
                               
-                logger.debug("Converting JSON to tree")
+                custom_logger.debug("Converting JSON to tree")
                 GlobalPlugin.root = json_to_tree(response.json())
                 GlobalPlugin.current = GlobalPlugin.root
 
-                logger.debug("Announcing root")
+                custom_logger.debug("Announcing root")
                 ui.message(GlobalPlugin.root.name)
                 if len(GlobalPlugin.root.children) == 1:
                     ui.message('1 child.') 
@@ -163,7 +157,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             
             else: # first time z was pressed
 
-                logger.debug(f"Announcing current element: {GlobalPlugin.current.name}")
+                custom_logger.debug(f"Announcing current element: {GlobalPlugin.current.name}")
                 ui.message('Current element')
 
                 # if GlobalPlugin.current.box_idx: ui.message('Clickable')
@@ -183,7 +177,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
         if GlobalPlugin.root is None:
             ui.message('You must first process the screen.')
-            logger.debug("User tried to navigate an unprocessed screen")
+            custom_logger.debug("User tried to navigate an unprocessed screen")
         else:
 
             GlobalPlugin.z_pressed_once = False
@@ -224,7 +218,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                     ui.message('Click')
 
                     if GlobalPlugin.click_id_buffer is None: 
-                        logger.debug(f"Attempting to click {GlobalPlugin.current.name} with ID {GlobalPlugin.click_id_buffer}")
+                        custom_logger.debug(f"Attempting to click {GlobalPlugin.current.name} with ID {GlobalPlugin.click_id_buffer}")
                         GlobalPlugin.click_id_buffer = GlobalPlugin.current.box_idx
 
                     ui.message(GlobalPlugin.current.box_idx)
@@ -232,14 +226,14 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 else:
 
                     ui.message('Not clickable')
-                    logger.debug(f"Element {GlobalPlugin.current.name} not clickable")
+                    custom_logger.debug(f"Element {GlobalPlugin.current.name} not clickable")
                   
                 return
 
             # if GlobalPlugin.current.box_idx: ui.message('Clickable')
 
             ui.message(GlobalPlugin.current.name)
-            logger.debug(f"Announcing element {GlobalPlugin.current.name}")
+            custom_logger.debug(f"Announcing element {GlobalPlugin.current.name}")
             if len(GlobalPlugin.current.children) == 0:
                 pass 
             elif len(GlobalPlugin.current.children) == 1:

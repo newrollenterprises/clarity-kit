@@ -1,7 +1,7 @@
+# built-in imports
 import json
 import sys
 import os
-import asyncio
 
 # trick to import from local /deps 
 curr_dir = os.path.dirname(__file__)
@@ -10,20 +10,9 @@ deps_dir = os.path.join(parent_dir, 'deps')
 sys.path.insert(0, deps_dir)
 # end trick
 
-import websockets
+# /deps imports
 
-def in_order(node):
-    context = [] # empty list we will populate
-
-    def _in_order(node):
-        context.append(node)
-        for child in node.children:
-            _in_order(child)
-
-    _in_order(node)
-
-    return context
-
+# debugging tool for NVDA
 def obj_dump(obj):
     dump_str = ""
     attributes_methods = dir(obj)
@@ -42,6 +31,7 @@ def obj_dump(obj):
     dump_str += str(entries)
     return dump_str
   
+# debugging, used to test addon without backend
 dummy_data = """
 {
   "name": "Page",
@@ -178,6 +168,7 @@ dummy_data = """
 }
 """
 
+# used to represent the page as a tree
 class Node:
     def __init__(self, name, description, textContent, id):
         self._name = name
@@ -187,7 +178,7 @@ class Node:
         self._parent = None
         self._next = None
         self._previous = None
-        self._box_idx = id 
+        self._box_idx = id  # for telling the app where to click
 
     # Getter and setter for name
     @property
@@ -292,7 +283,3 @@ def json_to_tree(data):
         return node
 
     return create_node(data)
-
-def click_on_element(id):
-
-  return
