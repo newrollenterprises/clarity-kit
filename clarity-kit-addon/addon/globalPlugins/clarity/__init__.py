@@ -10,8 +10,11 @@ import threading
 import tones
 import time
 import io
+import asyncio
+import logging
+import tempfile
 
-from .utils import in_order, obj_dump, dummy_data, Node, json_to_tree, similarity_score, click_on_element
+from .utils import in_order, obj_dump, dummy_data, Node, json_to_tree, click_on_element
 
 # trick to import from local /deps 
 curr_dir = os.path.dirname(__file__)
@@ -21,13 +24,23 @@ sys.path.insert(0, deps_dir)
 # end trick
 
 from mss import mss, tools
-import pytesseract
-from PIL import Image
-import numpy as np
-import cv2
+import websockets
 
 # TODO delete path entry
-pytesseract.pytesseract.tesseract_cmd = os.path.join(deps_dir, 'tesseract', 'tesseract.exe')
+
+# Configure logging
+log_str = "" # will hold log data to send to backend
+class logger():
+
+    format='%(asctime)s - %(levelname)s - %(message)s',  # Log format
+    level=logging.DEBUG  # Log level: DEBUG, INFO, WARNING, ERROR, CRITICAL
+
+    def debug(self, message):
+
+        response = requests.post(f"{backend_url}/logger", json={'level': 'DEBUG', 'message':message})
+
+
+logger.debug("Loading Clarity Kit")
 
 # backend_url = 'http://clarity.newrollenterprises.com/processScreen'
 backend_url = 'http://localhost:8001/processScreen'
@@ -42,11 +55,41 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
     # class variables
     root = None # root of screen element tree, set later
     current = None # current element
-    detection = None # for storing OCR results
     z_pressed_once = True # press twice to kick off another screen 
+    server_started = False
+    click_id_buffer = None # str that hold elem id
 
     @script(gestures=["kb:NVDA+z","kb:NVDA+upArrow","kb:NVDA+downArrow","kb:NVDA+leftArrow","kb:NVDA+rightArrow","kb:NVDA+enter"])
     def script_clarity(self, gesture):
+
+        logger.debug(f"Script called with gesture {gesture._get_mainKeyName()}")
+
+        if not GlobalPlugin.server_started:
+
+            GlobalPlugin.server_started = True
+
+            async def handler(websocket, path):
+                async for message in websocket:
+                    if GlobalPlugin.click_id_buffer is not None:
+                        logger.debug(f"WebSocket message received: {message}")
+                        # await websocket.send(f"Echo: {message}")
+                        await websocket.send(GlobalPlugin.click_id_buffer)
+                        GlobalPlugin.click_id_buffer = None # free up buffer
+
+            def start_server():
+                # Create a new event loop for this thread
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                
+                # Start the WebSocket server
+                start_server = websockets.serve(handler, "localhost", 8765)
+                loop.run_until_complete(start_server)
+                loop.run_forever()
+
+            # Start the WebSocket server in a new thread
+            logger.debug("Starting WebSocket server")
+            server_thread = threading.Thread(target=start_server)
+            server_thread.start()
 
         # api.copyToClip(obj_dump(sys.path))
 
@@ -60,62 +103,35 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 GlobalPlugin.z_pressed_once = False
 
                 ui.message('Clarity Kit processing.')
+                logger.debug("Processing a new screen")
 
                 # loading indicator
+                logger.debug("Starting loading indicator")
                 stop_event = threading.Event()
                 loading_task = threading.Thread(target=loading_tone, args=(stop_event,))
                 loading_task.start()
 
                 # take screenshot
+                logger.debug("Taking screenshot")
                 with mss() as sct:
-                  screenshot = sct.grab(sct.monitors[1])
-                  img = Image.frombytes('RGB', (screenshot.width, screenshot.height), screenshot.rgb)
-                  img_np = np.array(img)
+                  img = sct.grab(sct.monitors[1])
+                img_bytes = tools.to_png(img.rgb, img.size)
 
-                # Convert image to RGB (if not already)
-                # TODO black and white to improve OCR and claude
-                img_rgb = cv2.cvtColor(img_np, cv2.COLOR_BGR2RGB)
-                
-                # # Perform OCR on the image
-                # # TODO look for segment only mode, so no work wasted
-                # custom_config = r'--oem 3 --psm 6'  # OEM 3: Default, PSM 6: Assume a single uniform block of text
-                # # TODO read man page and change custom_config to better params
-                # detection = pytesseract.image_to_data(img_rgb, config=custom_config, output_type=pytesseract.Output.DICT)
-                # GlobalPlugin.detection = detection # store globally
-                # # boxes = pytesseract.image_to_boxes(img_rgb, config=custom_config)
-                
-                # # Draw bounding boxes and labels
-                # for i in range(len(detection['level'])):
-                #     x, y, w, h = detection['left'][i], detection['top'][i], detection['width'][i], detection['height'][i]
-                #     # cv2.rectangle(img_rgb, (x, y), (x + w, y + h), (0, 0, 255), 2)
-                #     cv2.putText(img_rgb, f"({i})", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
-
-                # # Resize the image to fit within a window, maintaining aspect ratio
-                # max_height = 800
-                # max_width = 1200
-
-                # height, width = img_rgb.shape[:2]
-                # scaling_factor = min(max_width / width, max_height / height)
-
-                # new_size = (int(width * scaling_factor), int(height * scaling_factor))
-                # resized_image = cv2.resize(img_rgb, new_size, interpolation=cv2.INTER_AREA)
-
-                # # Display the resized image with bounding boxes
-                # cv2.imshow('Image with Text Bounding Boxes', resized_image)
-                # cv2.waitKey(0)
-                # cv2.destroyAllWindows()               
-                
                 # Send the bytes to the backend endpoint
-                success, img_bytes = cv2.imencode('.png', img_rgb)
+                logger.debug("Sending screenshot to backend")
                 response = requests.post(backend_url, files={'image': ('image.png', img_bytes, 'image/png')})
 
                 # stop loading indicator
+                logger.debug("Stopping loading indicator")
                 stop_event.set()
                 loading_task.join()
 
                 # Print the response from the backend
                 # print(f'Status Code: {response.status_code}')
                 # TODO robust to errors
+                logger.debug(f"Response code {response.status_code}")
+                logger.debug(f"Response JSON: {response.json()}")
+
                 if response.status_code == 200:
                     pass
                     # print('Response:', response.json())
@@ -133,9 +149,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                     ui.message('An error occurred. Please try again')
                     return
                               
+                logger.debug("Converting JSON to tree")
                 GlobalPlugin.root = json_to_tree(response.json())
                 GlobalPlugin.current = GlobalPlugin.root
 
+                logger.debug("Announcing root")
                 ui.message(GlobalPlugin.root.name)
                 if len(GlobalPlugin.root.children) == 1:
                     ui.message('1 child.') 
@@ -145,6 +163,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             
             else: # first time z was pressed
 
+                logger.debug(f"Announcing current element: {GlobalPlugin.current.name}")
                 ui.message('Current element')
 
                 # if GlobalPlugin.current.box_idx: ui.message('Clickable')
@@ -164,6 +183,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
         if GlobalPlugin.root is None:
             ui.message('You must first process the screen.')
+            logger.debug("User tried to navigate an unprocessed screen")
         else:
 
             GlobalPlugin.z_pressed_once = False
@@ -203,25 +223,23 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
                     ui.message('Click')
 
-                    # box_idx = GlobalPlugin.current.box_idx 
+                    if GlobalPlugin.click_id_buffer is None: 
+                        logger.debug(f"Attempting to click {GlobalPlugin.current.name} with ID {GlobalPlugin.click_id_buffer}")
+                        GlobalPlugin.click_id_buffer = GlobalPlugin.current.box_idx
 
-                    # top = GlobalPlugin.detection['top'][box_idx]
-                    # left = GlobalPlugin.detection['left'][box_idx]
-                    # height = GlobalPlugin.detection['height'][box_idx]
-                    # width = GlobalPlugin.detection['width'][box_idx]
-
-                    # click_on_element(top, left, height, width)
                     ui.message(GlobalPlugin.current.box_idx)
                 
                 else:
 
                     ui.message('Not clickable')
+                    logger.debug(f"Element {GlobalPlugin.current.name} not clickable")
                   
                 return
 
             # if GlobalPlugin.current.box_idx: ui.message('Clickable')
 
             ui.message(GlobalPlugin.current.name)
+            logger.debug(f"Announcing element {GlobalPlugin.current.name}")
             if len(GlobalPlugin.current.children) == 0:
                 pass 
             elif len(GlobalPlugin.current.children) == 1:

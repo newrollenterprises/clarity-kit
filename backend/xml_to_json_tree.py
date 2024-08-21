@@ -33,8 +33,12 @@ def xml_to_json(element):
     return json_obj
 
 def react_xml_to_json(xml_string):
+    # clean up the string
+    clean_xml_string = xml_string.encode('ascii', 'ignore').decode('ascii')
+    clean_xml_string = clean_xml_string.replace('&', '&amp;')
+
     # Parse the XML string
-    root = ET.fromstring(xml_string)
+    root = ET.fromstring(clean_xml_string)
     
     # Convert the root element to JSON
     return xml_to_json(root)

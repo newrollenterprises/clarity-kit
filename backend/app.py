@@ -68,7 +68,7 @@ def send_to_claude(image_base64, image_media_type):
                     },
                     {
                         "type": "text",
-                        "text": "Breakdown this webpage into high-level XML components react-style. Every component should have all 4 attributes! Name each component based off what it does. If the component is outlined in red, give it a \"tagText\" attribute which contains the letters found in the yellow tag near the top of that component. If the component is not outlined in red set \"tagText\" = \"\" (the default value). Give every single component a brief \"description\" attribute of what it is/does. Extract the components text into a \"textContent\" attribute. The root component is <WebPage>. Respond only with the XML. No other words or text."
+                        "text": "Breakdown this webpage into high-level XML components react-style. Make lots and lots of components. Tons. Long XML. Every component should have all 4 attributes! Name each component based off what it does. If the component is outlined in red, give it a \"tagText\" attribute which contains the letters found in the yellow tag below that component. If the component is not outlined in red set \"tagText\" = \"\" (the default value). Give every single component a brief \"description\" attribute of what it is/does. Extract the components text into a \"textContent\" attribute. The root component is <WebPage>. Make lots and lots of components. Tons. Long XML. Respond only with the XML. No other words or text."
                     }
                 ]
             }
