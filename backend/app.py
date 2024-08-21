@@ -1,13 +1,53 @@
-from flask import Flask, request, jsonify
 import requests
 import base64
-import app_secrets
+import datetime
+import os
+import threading
+
+from flask import Flask, request, jsonify
+
 from xml_to_json_tree import react_xml_to_json
+import app_secrets
 
 app = Flask(__name__)
 
 ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages'
 ANTHROPIC_API_KEY = app_secrets.api_key
+
+@app.route('/logger', methods=['POST'])
+def logger():
+    # Get the JSON data from the request
+    data = request.get_json()
+    
+    # Extract fields from the JSON data
+    uuid = data.get('uuid')
+    sid = data.get('sid')
+    level = data.get('level')
+    message = data.get('message')
+    timestamp = data.get('timestamp')
+    
+    # Validate required fields
+    if not all([uuid, sid, level, message, timestamp]):
+        return jsonify({"error": "Missing required fields"}), 400
+    
+    # Convert epoch timestamp to human-readable format
+    timestamp_human_readable = datetime.datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
+    millis = int((timestamp % 1) * 1000)
+    timestamp_human_readable = f"{timestamp_human_readable}:{millis:03d}"
+    sid_human_readable = datetime.datetime.fromtimestamp(sid).strftime('%Y-%m-%d %H_%M_%S')
+    
+    # Create the directory path if it doesn't exist
+    log_dir = os.path.join('logs', uuid)
+    os.makedirs(log_dir, exist_ok=True)
+    
+    # Define the file path
+    log_file_path = os.path.join(log_dir, f'{sid_human_readable}.txt')
+    
+    # Append the log message to the file
+    with open(log_file_path, 'a') as log_file:
+        log_file.write(f'[{timestamp_human_readable}] [{level}] {message}\n')
+    
+    return jsonify({"status": "success"}), 200
 
 @app.route('/processScreen', methods=['POST'])
 def process_screen():
@@ -18,10 +58,23 @@ def process_screen():
     if 'image' not in request.files:
         return jsonify({'error': 'No image file provided'}), 400
 
+    uuid = request.form.get('uuid')
+    sid = request.form.get('sid')
+
+    if not all([uuid, sid]):
+        return jsonify({'error': 'Missing parameters'}), 400
+
     image_file = request.files['image']
     image_bytes = image_file.read()
     image_base64 = base64.b64encode(image_bytes).decode('utf-8')
     image_media_type = image_file.content_type
+
+    # log screenshot async
+    thread = threading.Thread(
+        target=log_screenshot,
+        args=(image_file, uuid, sid)
+    )
+    thread.start()
 
     response = send_to_claude(image_base64, image_media_type)
 
@@ -78,6 +131,15 @@ def send_to_claude(image_base64, image_media_type):
     response = requests.post(ANTHROPIC_API_URL, headers=headers, json=data)
 
     return response
+
+def log_screenshot(screenshot, uuid, sid):
+
+    sid_human_readable = datetime.datetime.fromtimestamp(float(sid)).strftime('%Y-%m-%d %H_%M_%S')
+
+    screenshot.seek(0) # some weird bug fix, otherwise image corrupts
+    screenshot.save(f"logs/{uuid}/{sid_human_readable}.png")
+    return
+
 
 if __name__ == '__main__':
     app.run(debug=True, host='127.0.0.1', port=8001)

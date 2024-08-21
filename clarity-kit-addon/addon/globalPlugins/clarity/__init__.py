@@ -14,7 +14,7 @@ import ui
 import api
 
 # local imports
-from .utils import customer_logger, json_to_tree
+from .utils import CustomLogger, json_to_tree
 
 # trick to import from local /deps 
 curr_dir = os.path.dirname(__file__)
@@ -34,6 +34,7 @@ import websockets
 BACKEND_URL = 'http://localhost:8001'
 WEBSOCKET_PORT = 8765
 
+custom_logger = CustomLogger(BACKEND_URL)
 custom_logger.debug("Loading Clarity Kit")
 
 # used for beeps while loading
@@ -70,19 +71,17 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                         await websocket.send(GlobalPlugin.click_id_buffer)
                         GlobalPlugin.click_id_buffer = None # free up buffer
 
-            def start_server():
-                # Create a new event loop for this thread
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-                
+            async def start_server():
                 # Start the WebSocket server
-                start_server = websockets.serve(handler, "localhost", WEBSOCKET_PORT)
-                loop.run_until_complete(start_server)
-                loop.run_forever()
+                async with websockets.serve(handler, "localhost", WEBSOCKET_PORT):
+                    await asyncio.Future()
+                
+            def wrapper_start_server():
+                asyncio.run(start_server())
 
             # Start the WebSocket server in a new thread
             custom_logger.debug("Starting WebSocket server")
-            server_thread = threading.Thread(target=start_server)
+            server_thread = threading.Thread(target=wrapper_start_server)
             server_thread.start()
 
         # api.copyToClip(obj_dump(sys.path))
@@ -92,6 +91,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
         if main_key_name == 'z':
 
             if GlobalPlugin.z_pressed_once: # kick off another screen
+
+                # new logging session
+                custom_logger.new_session()
 
                 # reset for next time
                 GlobalPlugin.z_pressed_once = False
@@ -113,7 +115,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
                 # Send the bytes to the backend endpoint
                 custom_logger.debug("Sending screenshot to backend")
-                response = requests.post(BACKEND_URL, files={'image': ('image.png', img_bytes, 'image/png')})
+                response = requests.post(f"{BACKEND_URL}/processScreen", files={'image': ('image.png', img_bytes, 'image/png')}, data={'uuid': custom_logger.get_uuid(), 'sid': custom_logger.get_sid()})
 
                 # stop loading indicator
                 custom_logger.debug("Stopping loading indicator")

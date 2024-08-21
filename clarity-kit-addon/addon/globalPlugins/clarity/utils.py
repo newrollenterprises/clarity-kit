@@ -2,6 +2,9 @@
 import json
 import sys
 import os
+import requests
+import time
+import threading
 
 # trick to import from local /deps 
 curr_dir = os.path.dirname(__file__)
@@ -283,3 +286,54 @@ def json_to_tree(data):
         return node
 
     return create_node(data)
+
+def get_uuid():
+
+    # open email.txt to get user email
+    curr_dir = os.path.dirname(__file__)
+    parent_dir = os.path.dirname(curr_dir)
+    with open(os.path.join(parent_dir,'email.txt'), 'r') as f:
+      uuid = f.read()
+    
+    return uuid
+
+
+class CustomLogger():
+    
+    def __init__(self, backend_url, endpoint = '/logger'):
+        self._backend_url = backend_url
+        self._endpoint = endpoint
+
+        self._uuid = get_uuid() # global func from utils
+
+        self.new_session()
+
+    def get_uuid(self):
+        return self._uuid
+      
+    def get_sid(self):
+      return self._sid
+    
+    def new_session(self):
+        self._sid = time.time()
+
+    @staticmethod
+    def http_post(*args, **kwargs):
+        response = requests.post(*args, **kwargs)
+        return response
+
+    def debug(self, message):
+        thread = threading.Thread(
+          target=CustomLogger.http_post,
+          args=(f"{self._backend_url}/{self._endpoint}",),
+          kwargs={ 
+            'json': {
+              'timestamp': time.time(),
+              'uuid': self._uuid,
+              'sid': self._sid,
+              'level': 'DEBUG',
+              'message': message,
+            }
+          }
+        )
+        thread.start()

@@ -20,6 +20,7 @@
 - backend
   - detailed logging so I can debug when user is testing
   - easier LLM swap out
+  - make everything JSON
 - addon 
   - purge unused dependencies
   - close websocket server when plugin restarts
