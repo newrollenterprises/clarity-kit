@@ -1,12 +1,7 @@
 # clarity-kit
 
-## Todo for user
-- extension
-- addon
-- backend
-
 ## Ideas
-- talk to page? ask questions in englihs
+- talk to page? ask questions in english
 - "magic search" english query finds element (using info from extension)
 - sophisticated lazy loading, back-and-forth conditional expansion of components
 - simple lazy loading, first pass, then immediate involuntary background second pass to fill in attributes
@@ -15,15 +10,11 @@
 - extension
   - speed up refresh interval
   - fix click dynamic pages no refresh of elements
-  - remove extraneous elements
-  - report click() misses 
+  - remove extraneous elements (amazon for ex)
 - backend
-  - detailed logging so I can debug when user is testing
   - easier LLM swap out
-  - make everything JSON
+  - make everything JSON (/processScreen)
 - addon 
-  - purge unused dependencies
-  - close websocket server when plugin restarts
 
 ## Build Log
 
