@@ -263,7 +263,7 @@ class Node:
         self._box_idx = value
 
     def __repr__(self):
-        return f"Node(name={self.name}, description={self.description}, children={len(self.children)})"
+        return f"<{self.name} description=\"{self.description}\" textContent=\"{self.textContent}\" clickID=\"{self.box_idx}\" />"
 
     def to_dict(self):
         return {

@@ -6,6 +6,7 @@ import threading
 import tones
 import time
 import asyncio
+import json
 
 # NVDA imports
 import globalPluginHandler
@@ -65,11 +66,24 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
             async def handler(websocket, path):
                 async for message in websocket:
-                    if GlobalPlugin.click_id_buffer is not None:
-                        custom_logger.info(f"WebSocket message received: {message}")
-                        # await websocket.send(f"Echo: {message}")
-                        await websocket.send(GlobalPlugin.click_id_buffer)
-                        GlobalPlugin.click_id_buffer = None # free up buffer
+                    # custom_logger.info(f"WebSocket message received: {message}")
+                    # too spammy
+
+                    message_parsed = json.loads(message)
+                    type = message_parsed.get('type', '')
+                    payload = message_parsed.get('payload', '')
+
+                    if type == 'log':
+                        custom_logger.info(payload, source='extension')
+                    elif type == 'poll':
+                        if GlobalPlugin.click_id_buffer is not None:
+                            custom_logger.info(f"Sending buffer ({GlobalPlugin.click_id_buffer}) to extension")
+                            await websocket.send(GlobalPlugin.click_id_buffer)
+                            GlobalPlugin.click_id_buffer = None # free up buffer
+                        # else:
+                            # custom_logger.info("Nothing in buffer. Not sending anything to extension")
+                    else:
+                        custom_logger.info(f"Unhandled message: {message}")
 
             async def start_server():
                 # Start the WebSocket server
@@ -82,7 +96,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             # Start the WebSocket server in a new thread
             custom_logger.info("Starting WebSocket server")
             server_thread = threading.Thread(target=wrapper_start_server)
-            # server_thread.start()
+            server_thread.daemon = True # lets thread die quicker on exit
+            server_thread.start()
 
         # api.copyToClip(obj_dump(sys.path))
 
@@ -220,7 +235,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                     ui.message('Click')
 
                     if GlobalPlugin.click_id_buffer is None: 
-                        custom_logger.info(f"Attempting to click {GlobalPlugin.current.name} with ID {GlobalPlugin.click_id_buffer}")
+                        custom_logger.info(f"Attempting to click {GlobalPlugin.current.name} XML: {repr(GlobalPlugin.current)}")
                         GlobalPlugin.click_id_buffer = GlobalPlugin.current.box_idx
 
                     ui.message(GlobalPlugin.current.box_idx)

@@ -145,11 +145,12 @@ function connectWebSocket() {
 
   ws.onopen = () => {
     console.log('WebSocket connection established.');
+    ws.send(JSON.stringify({type: 'log', payload: `WebSocket connection established.`}))
     // Optionally, handle WebSocket connection open
 
     function pollSocket() {
         console.log('Polling...')
-        ws.send("What's up doc?")
+        ws.send(JSON.stringify({type: 'poll'}))
     }
 
     pollId = setInterval(pollSocket, 1000)
@@ -158,17 +159,25 @@ function connectWebSocket() {
 
   ws.onmessage = (event) => {
     console.log('Received message:', event.data);
-    // Optionally, handle incoming messages
+
+    let hitElement = null;
+    
     elementsData.forEach(
         ({id, element}) => {
             if (event.data == id) { 
                 console.log('hit!')
-                // console.log(element)
+                hitElement = element
                 element.focus()
                 element.click()
             }
         }
     )
+    if (hitElement) {
+        ws.send(JSON.stringify({type: 'log', payload: `Hit! Element: ${hitElement.outerHTML}`}))
+    } else {
+        ws.send(JSON.stringify({type: 'log', payload: `Miss for ${event.data}`}))
+    }
+
   };
 
   ws.onclose = (event) => {
