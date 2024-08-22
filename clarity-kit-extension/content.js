@@ -126,7 +126,10 @@ interactableElements.forEach((element, index) => {
 
 // Update the positions of boxes and tags on window resize and scroll
 // TODO delete old elements and add new ones every interval
-setInterval(updateAllPositions, 3000)
+setInterval(updateAllPositions, 300)
+// DEBUG
+// setInterval(updateAllPositions, 3000)
+
 // window.addEventListener('scroll', updateAllPositions);
 // window.addEventListener('resize', updateAllPositions);
 
@@ -174,8 +177,10 @@ function connectWebSocket() {
     )
     if (hitElement) {
         ws.send(JSON.stringify({type: 'log', payload: `Hit! Element: ${hitElement.outerHTML}`}))
+        ws.send(JSON.stringify({type: 'click_status', payload: 'hit'}))
     } else {
         ws.send(JSON.stringify({type: 'log', payload: `Miss for ${event.data}`}))
+        ws.send(JSON.stringify({type: 'click_status', payload: 'miss'}))
     }
 
   };

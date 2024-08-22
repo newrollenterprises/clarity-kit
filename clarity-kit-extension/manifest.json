@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Clarity Kit for NVDA",
-  "version": "1.0",
-  "description": "Better navigation for NVDA",
+  "version": "1.0.0",
+  "description": "Navigate inaccessible web pages",
   "permissions": [
     "storage",
     "activeTab",
