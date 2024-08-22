@@ -48,6 +48,7 @@
 - Start Screen > explore user configuration > find 'scratchpad' directory
 - mklink /D target source, symlink addon/globalPlugins/clarity to scratchpad/globalPlugins/clarity
 - Reload plugins (NVDA+n > tools)
+- Create folder `backend/logs`
 - Fire up flask (app.py)
 - All set. Use NVDA+z to start, and NVDA+ arrow keys to traverse tree
 

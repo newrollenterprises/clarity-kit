@@ -31,8 +31,8 @@ import websockets
 # TODO delete path entry
 
 # constants
-# BACKEND_URL = 'http://clarity.newrollenterprises.com'
-BACKEND_URL = 'http://localhost:8001'
+BACKEND_URL = 'https://clarity.newrollenterprises.com'
+# BACKEND_URL = 'http://localhost:8001'
 WEBSOCKET_PORT = 8765
 
 custom_logger = CustomLogger(BACKEND_URL)
@@ -42,7 +42,7 @@ custom_logger.info("Loading Clarity Kit")
 def loading_tone(stop_event):
   while not stop_event.is_set():
       tones.beep(640, 100)
-      time.sleep(1)
+      time.sleep(0.5)
 
 # adheres to NVDA specs 
 class GlobalPlugin(globalPluginHandler.GlobalPlugin):
@@ -238,12 +238,12 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                         custom_logger.info(f"Attempting to click {GlobalPlugin.current.name} XML: {repr(GlobalPlugin.current)}")
                         GlobalPlugin.click_id_buffer = GlobalPlugin.current.box_idx
 
-                    ui.message(GlobalPlugin.current.box_idx)
+                    # ui.message(GlobalPlugin.current.box_idx)
                 
                 else:
 
                     ui.message('Not clickable')
-                    custom_logger.info(f"Element {GlobalPlugin.current.name} not clickable")
+                    custom_logger.info(f"Element {GlobalPlugin.current.name} not clickable. XML: {repr(GlobalPlugin.current)}")
                   
                 return
 
