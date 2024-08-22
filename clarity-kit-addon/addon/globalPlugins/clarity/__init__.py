@@ -82,6 +82,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                             GlobalPlugin.click_id_buffer = None # free up buffer
                         # else:
                             # custom_logger.info("Nothing in buffer. Not sending anything to extension")
+                    elif type == 'click_status':
+                        if payload != 'hit': ui.message('Click failed.')
                     else:
                         custom_logger.info(f"Unhandled message: {message}")
 
@@ -106,6 +108,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
         if main_key_name == 'z':
 
             if GlobalPlugin.z_pressed_once: # kick off another screen
+                
+                # clear last screen
+                GlobalPlugin.root = None
+                GlobalPlugin.current = None
 
                 # new logging session
                 custom_logger.new_session()
@@ -199,21 +205,21 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
             GlobalPlugin.z_pressed_once = False
 
-            if main_key_name == 'upArrow':
+            if main_key_name == 'leftArrow':
                 if GlobalPlugin.current.previous is None:
                     ui.message('No previous sibling')
                     return
                 else:
                     GlobalPlugin.current = GlobalPlugin.current.previous
 
-            if main_key_name == 'downArrow':
+            if main_key_name == 'rightArrow':
                 if GlobalPlugin.current.next is None:   
                     ui.message('No next sibling')
                     return
                 else:
                     GlobalPlugin.current = GlobalPlugin.current.next
 
-            if main_key_name == 'rightArrow':
+            if main_key_name == 'downArrow':
                 if len(GlobalPlugin.current.children) == 0:
                     ui.message('No children')
                     return
@@ -221,7 +227,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                     ui.message('First child')
                     GlobalPlugin.current = GlobalPlugin.current.children[0]
 
-            if main_key_name == 'leftArrow':
+            if main_key_name == 'upArrow':
                 if GlobalPlugin.current.parent is None:
                     ui.message('No parent')
                     return
@@ -237,6 +243,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                     if GlobalPlugin.click_id_buffer is None: 
                         custom_logger.info(f"Attempting to click {GlobalPlugin.current.name} XML: {repr(GlobalPlugin.current)}")
                         GlobalPlugin.click_id_buffer = GlobalPlugin.current.box_idx
+                    else:
+                        custom_logger.info("Buffer full. Can't submit click.")
 
                     # ui.message(GlobalPlugin.current.box_idx)
                 
