@@ -5,10 +5,11 @@
 - "magic search" english query finds element (using info from extension)
 - sophisticated lazy loading, back-and-forth conditional expansion of components
 - simple lazy loading, first pass, then immediate involuntary background second pass to fill in attributes
+- use text matching (when available) via chrome extension for even more reliable clicks
+  - claude's textContent compared against elementsData[].textContent
 
 ## Todo
 - extension
-  - speed up refresh interval
   - fix click dynamic pages no refresh of elements
   - remove extraneous elements (amazon for ex)
 - backend
@@ -51,6 +52,39 @@
 - Create folder `backend/logs`
 - Fire up flask (app.py)
 - All set. Use NVDA+z to start, and NVDA+ arrow keys to traverse tree
+
+## Creating a Release
+
+### addon
+- run scratchpad plugin one more time to ensure all the python is compiled
+- copy addon to version folder, ex: release/1.0.0/addon
+- edit manifest.ini as needed (version, etc.)
+- for each dependency, in its dist info, delete everything but LICENSE
+- add copies of LICENSES as necessary 
+- go into /clarity/__pycache__ and copy everything into /clarity
+- rename the .pyc so it has the same name as its corresponding .py
+  - ex: __init__.cpython-311.pyc -> __init__.pyc
+- delete everything in /clarity except the .pyc files
+- change email.txt to have the user's email (at the moment any uuid can go inside email.txt and work)
+- zip everything inside /addon (manifest.ini is at the root) and rename the zip `clarityKit.nvda-addon`
+- copy the .nvda-addon to /release/1.0.0/clarityKit.nvda-addon
+
+### extension
+- copy clarity-kit-extension folder and rename to extension
+  - ex: /release/1.0.0/extension
+- obfuscate the js files, ex: `javascript-obfuscator content.js --rename-globals true`
+- delete the old js files and rename the new ones to replace
+
+### other
+- add in my LICENSE at /release/1.0.0/LICENSE
+- zip the .nvda-addon and extension folder into `clarityKit-1.0.0.zip` 
+
+### testing
+- copy clarityKit-1.0.0.zip to downloads and unzip
+- disable scratchpad in NVDA (settings > advanced)
+- install the addon from unzipped files
+- from chrome://extensions, hit load unpacked and select 'extension' folder
+- NVDA + z
 
 ## Debugging
 - %temp%/nvda.log
