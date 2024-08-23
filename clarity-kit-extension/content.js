@@ -1,4 +1,4 @@
-console.log('Clarity Kit for NVDA loaded successfully.')
+// console.log('Clarity Kit for NVDA loaded successfully.')
 
 const elementsData = [];
 
@@ -144,7 +144,7 @@ function connectWebSocket() {
   }
 
   if (document.visibilityState !== 'visible') {
-    console.log('fast return')
+    // console.log('fast return')
     setTimeout(connectWebSocket, 500)
     return  // we only want socket connections if page is in focus
   } 
@@ -153,12 +153,12 @@ function connectWebSocket() {
   let pollId = null;
 
   ws.onopen = () => {
-    console.log('WebSocket connection established.');
+    // console.log('WebSocket connection established.');
     ws.send(JSON.stringify({type: 'log', payload: `WebSocket connection established for ${document.title}`}))
     // Optionally, handle WebSocket connection open
 
     function pollSocket() {
-        console.log('Polling...')
+        // console.log('Polling...')
         ws.send(JSON.stringify({type: 'poll'}))
     }
 
@@ -167,14 +167,14 @@ function connectWebSocket() {
   };
 
   ws.onmessage = (event) => {
-    console.log('Received message:', event.data);
+    // console.log('Received message:', event.data);
 
     let hitElement = null;
     
     elementsData.forEach(
         ({id, element}) => {
             if (event.data == id) { 
-                console.log('hit!')
+                // console.log('hit!')
                 hitElement = element
                 element.focus()
                 element.click()
@@ -192,19 +192,19 @@ function connectWebSocket() {
   };
 
   ws.onclose = (event) => {
-    console.log('WebSocket connection closed. Reconnecting in some seconds...');
+    // console.log('WebSocket connection closed. Reconnecting in some seconds...');
     if (document.visibilityState === 'visible') {
-        console.log('slow timeout')
+        // console.log('slow timeout')
         setTimeout(connectWebSocket, RECONNECT_INTERVAL);
     } else {
-        console.log('fast timeout')
+        // console.log('fast timeout')
         setTimeout(connectWebSocket, 500)
     }
     clearInterval(pollId)
   };
 
   ws.onerror = (error) => {
-    console.error('WebSocket error:', error);
+    // console.error('WebSocket error:', error);
     ws.close();
   };
 
