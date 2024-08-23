@@ -143,12 +143,18 @@ function connectWebSocket() {
     ws.close();
   }
 
+  if (document.visibilityState !== 'visible') {
+    console.log('fast return')
+    setTimeout(connectWebSocket, 500)
+    return  // we only want socket connections if page is in focus
+  } 
+
   ws = new WebSocket(WEBSOCKET_URL);
   let pollId = null;
 
   ws.onopen = () => {
     console.log('WebSocket connection established.');
-    ws.send(JSON.stringify({type: 'log', payload: `WebSocket connection established.`}))
+    ws.send(JSON.stringify({type: 'log', payload: `WebSocket connection established for ${document.title}`}))
     // Optionally, handle WebSocket connection open
 
     function pollSocket() {
@@ -186,8 +192,14 @@ function connectWebSocket() {
   };
 
   ws.onclose = (event) => {
-    console.log('WebSocket connection closed. Reconnecting in 10 seconds...');
-    setTimeout(connectWebSocket, RECONNECT_INTERVAL);
+    console.log('WebSocket connection closed. Reconnecting in some seconds...');
+    if (document.visibilityState === 'visible') {
+        console.log('slow timeout')
+        setTimeout(connectWebSocket, RECONNECT_INTERVAL);
+    } else {
+        console.log('fast timeout')
+        setTimeout(connectWebSocket, 500)
+    }
     clearInterval(pollId)
   };
 
@@ -199,4 +211,11 @@ function connectWebSocket() {
 }
 
 // Start WebSocket connection on extension startup
-connectWebSocket();
+connectWebSocket()
+document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'visible') {
+        console.log() // do nothing
+    } else {
+        if (ws) ws.close()
+    }
+});
