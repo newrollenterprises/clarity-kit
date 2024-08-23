@@ -19,6 +19,12 @@
 
 ## Build Log
 
+### 08/23/24
+- finished new matching paradigm: chrome extension draws boxes and tags
+  - takes reliability up from 30-50% to about 80%
+- websocket is the communication bridge between NVDA and extension
+- added sophisticated logging so I can properly remote debug sessions
+
 ### 08/14/24
 - kept getting 529 (server overload) errors from Claude, so I created backend/app2.py which uses OpenAI under the hood instead. Less effective but more reliable.
 
