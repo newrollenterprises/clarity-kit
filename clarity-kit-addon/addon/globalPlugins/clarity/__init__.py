@@ -154,15 +154,15 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                     # print('Response:', response.json())
                 elif response.status_code == 529:
                     GlobalPlugin.z_pressed_once = True
-                    print(response.text)
-                    print(response.status_code)
+                    # print(response.text)
+                    # print(response.status_code)
                     ui.message('Overloaded. Please wait a moment and try again.')
                     return
                 else:
                     # print('Error:', response.text)
                     GlobalPlugin.z_pressed_once = True
-                    print(response.text)
-                    print(response.status_code)
+                    # print(response.text)
+                    # print(response.status_code)
                     ui.message('An error occurred. Please try again')
                     return
                               
@@ -179,6 +179,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 ui.message(GlobalPlugin.root.description)
             
             else: # first time z was pressed
+
+                if GlobalPlugin.current is None:
+                    GlobalPlugin.z_pressed_once = True
+                    ui.message('An error has occured. Process a new screen to continue.')
+                    return
 
                 custom_logger.info(f"Announcing current element: {GlobalPlugin.current.name}")
                 ui.message('Current element')

@@ -59,7 +59,7 @@ def logger():
 def process_screen():
 
     # for debugging only, bypasses claude API
-    # return "debugging", 500
+    # return {'error': 'fake error for debugging purposes'}, 500
 
     if 'image' not in request.files:
         return jsonify({'error': 'No image file provided'}), 400
