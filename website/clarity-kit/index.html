@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clarity Kit NVDA Add On</title>
+    <script>
+        // JavaScript to extract the download link from the query string
+        window.onload = function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const downloadLink = urlParams.get('link');
+
+            if (downloadLink) {
+                // Update the href attribute of the download link if the parameter is present
+                document.getElementById('downloadLink').href = downloadLink;
+            }
+        };
+    </script>
+</head>
+<body>
+    <header>
+        <h1>Clarity Kit NVDA Add On</h1>
+        <p>Navigate inaccessible webpages</p>
+    </header>
+    
+    <main>
+        <section>
+            <h2>How to Use</h2>
+            <p>NVDA + Z: press twice to activate the add on, press this button twice every time you are on an inaccessible page</p>
+            <p>NVDA + arrow keys: navigate the web page</p>
+        </section>
+
+        <section>
+            <h2>Installation Instructions</h2>
+            <ol>
+              <li>Click the download link below</li>
+              <li>Press NVDA + n to open the NVDA menu</li>
+              <li>Go to the tools sub menu</li>
+              <li>Now go to the Add On Store</li>
+              <li>Click the Install from External Source button</li>
+              <li>Select select the dot nvda-addon file that you downloaded earlier</li>
+              <li>Install the add on</li>
+              <li>Close the store page</li>
+              <li>Restart NVDA for the changes to take effect</li>
+            </ol>
+        </section>
+        
+        <section>
+            <h2>Download</h2>
+            <p>By downloading or using this software, you agree to our <a href="terms.txt">Terms of Service</a>.</p>
+            <p><a id="downloadLink" href="your-download-link-here" download>Click here to download the add on</a></p>
+        </section>
+    </main>
+
+    <footer>
+        <p>
+            <a href="privacy.txt">Privacy</a> | 
+            <a href="terms.txt">Terms</a>
+        </p>
+        <p>&copy; 2024 Newroll Enterprises, LLC. All rights reserved.</p>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,40 @@
+Terms of Service for Newroll Enterprises, LLC
+Effective Date: September 7, 2024
+
+Thank you for choosing Newroll Enterprises, LLC! By using our software, you agree to these Terms of Service ("Terms"). Please read them carefully as they contain important information about your rights and obligations.
+
+1. Acceptance of Terms
+By downloading, installing, or using our software, you agree to be bound by these Terms. If you do not agree with any part of these Terms, please do not use our software.
+
+2. Disclaimer of Warranties and Limitation of Liability
+Our software is provided on an "AS IS" and "AS AVAILABLE" basis, without warranties of any kind, either express or implied, including but not limited to warranties of merchantability, fitness for a particular purpose, non-infringement, or that the software will be free from defects, errors, or interruptions.
+
+NEWROLL ENTERPRISES, LLC DISCLAIMS ALL LIABILITY FOR DAMAGES OF ANY KIND ARISING OUT OF YOUR USE OF THE SOFTWARE, INCLUDING BUT NOT LIMITED TO DIRECT, INDIRECT, INCIDENTAL, CONSEQUENTIAL, SPECIAL, OR PUNITIVE DAMAGES, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES, AND WHETHER OR NOT SUCH DAMAGES ARE FORESEEABLE. THIS INCLUDES DAMAGES ARISING FROM NEGLIGENCE, MISUSE, OR ANY FAILURE BY US OR OUR SOFTWARE TO PERFORM AS EXPECTED.
+
+3. AI-Based Nature of the Software
+Our software utilizes artificial intelligence (AI) technologies, which are inherently experimental and may be unreliable or unpredictable. As a result:
+
+The software may make errors, including but not limited to incorrect predictions, wrong suggestions, and unintended actions or "misclicks."
+We do not guarantee that the software will always perform accurately or as intended, and users should not rely on the software for critical or sensitive tasks.
+IMPORTANT: Our software should NOT be used for sensitive or high-risk activities, including but not limited to financial transactions, medical decision-making, emergency response, or any situation where errors or inaccuracies could result in harm, loss, or significant damage.
+
+4. User Responsibilities
+You are solely responsible for any actions taken or decisions made based on the output or functionality of the software. You agree to:
+
+Use the software at your own risk.
+Not use the software for any purpose that is unlawful or prohibited by these Terms.
+Regularly back up your data and use the software with caution, especially when dealing with critical or sensitive information.
+
+5. Indemnification
+You agree to indemnify, defend, and hold harmless Newroll Enterprises, LLC, its affiliates, officers, directors, employees, and agents from any and all claims, damages, losses, liabilities, and expenses (including reasonable attorneys' fees) arising out of or related to your use of the software, including any breach of these Terms.
+
+6. Modification of Terms
+We reserve the right to modify these Terms at any time. We will notify you of any changes by posting the updated Terms on our website or within the software. Your continued use of the software after any such changes constitutes your acceptance of the new Terms.
+
+7. Governing Law
+These Terms are governed by and construed in accordance with the laws of Louisiana. Any disputes arising under or in connection with these Terms shall be subject to the exclusive jurisdiction of the courts located in Louisiana.
+
+8. Contact Us
+If you have any questions or concerns about these Terms, please contact us.
+
+By using our software, you acknowledge that you have read, understood, and agree to be bound by these Terms.

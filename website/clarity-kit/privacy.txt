@@ -1,0 +1,39 @@
+Privacy Policy for Newroll Enterprises, LLC
+Effective Date: September 9, 2024
+
+We are committed to protecting your privacy and ensuring transparency regarding the data we collect and how it is used. This Privacy Policy describes how we collect, use, and disclose information when you use our software.
+
+1. Information We Collect
+When you use our software, we may collect the following types of information:
+
+User Usage Data: This includes information about your interactions with our software, such as commands pressed, features used, and the frequency and duration of usage.
+Screenshots: We may collect screenshots sent to our service for the purpose of debugging and improving user experience.
+
+2. How We Use Your Information
+We use the information collected to:
+
+Improve Our Software: Analyze usage patterns and user behavior to enhance our software's functionality, design, and overall user experience.
+Debug and Troubleshoot: Identify and resolve technical issues and ensure our software runs smoothly.
+Develop New Features: Use insights from user data to develop new features and services that better meet user needs.
+
+3. Sharing Your Information
+We do not sell, rent, or trade your personal information with third parties. However, we may share your information with:
+
+Service Providers: We may engage third-party companies and individuals to facilitate our services who may have access to your information solely to perform these tasks on our behalf and under obligations similar to those in this Privacy Policy.
+Legal Compliance: We may disclose your information if required to do so by law or in response to valid requests by public authorities.
+
+4. Data Security
+We take the security of your information seriously and implement reasonable administrative, technical, and physical safeguards to protect your data from unauthorized access, use, alteration, or disclosure. However, no method of transmission over the internet or method of electronic storage is 100% secure.
+
+5. Your Choices
+You have certain rights regarding your information, including the right to:
+
+Access, correct, or delete your personal information.
+Opt out of the collection of certain types of data.
+Request that we stop using your information in certain ways.
+Please contact us to exercise any of these rights.
+
+6. Changes to This Privacy Policy
+We may update this Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on our website. You are advised to review this Privacy Policy periodically for any changes.
+
+By using our software, you agree to the terms of this Privacy Policy.
